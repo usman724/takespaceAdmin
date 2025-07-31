@@ -1,4 +1,6 @@
-// Centralized API calling module
+// src/lib/api.js
+
+// Centralized API calling module with comprehensive mock data
 const mockData = {
   // Learning page data
   learning: {
@@ -48,35 +50,51 @@ const mockData = {
       ]
     }
   },
+
+  teachersPage: {
+    teachers: [
+      { id: 1, name: 'Test Application', email: 'willie.jennings@example.com', totalStudents: 36, status: 'active' },
+      { id: 2, name: 'Ameera Binte Mohid Faisal', email: 'michael.mitc@example.com', totalStudents: 56, status: 'active' },
+      { id: 3, name: 'Guy Hawkins', email: 'tanya.hill@example.com', totalStudents: 15, status: 'active' },
+      { id: 4, name: 'Eleanor Pena', email: 'jessica.hanson@example.com', totalStudents: 44, status: 'active' },
+      { id: 5, name: 'Theresa Webb', email: 'sara.cruz@example.com', totalStudents: 23, status: 'active' },
+      { id: 6, name: 'Arlene McCoy', email: 'nevaeh.simmons@example.com', totalStudents: 20, status: 'active' },
+      { id: 7, name: 'Jane Cooper', email: 'bill.sanders@example.com', totalStudents: 37, status: 'active' },
+      { id: 8, name: 'Jerome Bell', email: 'curtis.weaver@example.com', totalStudents: 18, status: 'active' },
+      { id: 9, name: 'Brooklyn Simmons', email: 'alma.lawson@example.com', totalStudents: 49, status: 'active' },
+      { id: 10, name: 'Ronald Richards', email: 'deanna.curtis@example.com', totalStudents: 57, status: 'active' },
+      { id: 11, name: 'Devon Lane', email: 'dolores.chambers@example.com', totalStudents: 51, status: 'active' },
+    ],
+    subjects: ['Maths', 'English Language', 'Science', 'Geography', 'History']
+  },
   
   // Teacher Engagement data
-// Update the Teacher Engagement data in your API
-teacherEngagement: {
-  filters: {
-    grade: 'All Grade',
-    subject: 'All subjects',
-    dateRange: 'Last 30 days',
-    teachers: 'All'
-  },
-  summary: {
-    segments: [
-      { percentage: 8, color: 'white' },
-      { percentage: 8, color: '#398AC8' },
-      { percentage: 8, color: '#F2C94C' },
-      { percentage: 76, color: '#103358' }
+  teacherEngagement: {
+    filters: {
+      grade: 'All Grade',
+      subject: 'All subjects',
+      dateRange: 'Last 30 days',
+      teachers: 'All'
+    },
+    summary: {
+      segments: [
+        { percentage: 8, color: 'white' },
+        { percentage: 8, color: '#398AC8' },
+        { percentage: 8, color: '#F2C94C' },
+        { percentage: 76, color: '#103358' }
+      ]
+    },
+    teachers: [
+      { name: 'Doctor Alex', engagement: 100, color: '#103358' },
+      { name: 'Ameer binte Mohad', engagement: 76, color: '#F2C94C' },
+      { name: 'Mr Hafriz', engagement: 100, color: '#103358' },
+      { name: 'Ram Thippeswamy', engagement: 28, color: '#398AC8' },
+      { name: 'Vanitha V', engagement: 100, color: '#103358' },
+      { name: 'John Zaho', engagement: 100, color: '#103358' },
+      { name: 'Yuqing Fan', engagement: 100, color: '#103358' },
+      { name: 'Jan Yonas', engagement: 76, color: '#F2C94C' }
     ]
   },
-  teachers: [
-    { name: 'Doctor Alex', engagement: 100, color: '#103358' },
-    { name: 'Ameer binte Mohad', engagement: 76, color: '#F2C94C' },
-    { name: 'Mr Hafriz', engagement: 100, color: '#103358' },
-    { name: 'Ram Thippeswamy', engagement: 28, color: '#398AC8' },
-    { name: 'Vanitha V', engagement: 100, color: '#103358' },
-    { name: 'John Zaho', engagement: 100, color: '#103358' },
-    { name: 'Yuqing Fan', engagement: 100, color: '#103358' },
-    { name: 'Jan Yonas', engagement: 76, color: '#F2C94C' }
-  ]
-},
   
   // Student Analytics data
   studentAnalytics: {
@@ -102,20 +120,20 @@ teacherEngagement: {
       dateRange: 'Last 30 days'
     },
     homeworkQuestions: {
-      labels: ['Mia Alexander', 'Bandar Alharty', 'uno Bessoni d...', 'Shri Bhat'],
-      data: [200, 350, 180, 280],
+      labels: ['Mia Alexander', 'Bandar Alharty', 'uno Bessoni d...', 'Shri Bhat', 'Aarav C.', 'Dayna C.'],
+      data: [200, 350, 180, 280, 150, 90],
       average: 157,
       goal: 120
     },
     classroomQuestions: {
-      labels: ['Mia Alexander', 'Bandar Alharty', 'uno Bessoni d...', 'Shri Bhat'],
-      data: [180, 320, 160, 250],
+      labels: ['Mia Alexander', 'Bandar Alharty', 'uno Bessoni d...', 'Shri Bhat', 'Aarav C.', 'Dayna C.'],
+      data: [180, 320, 160, 250, 140, 80],
       average: 140,
       goal: 100
     }
   },
   
-  // Student data table
+  // Students data table
   students: {
     count: 161,
     data: [
@@ -130,6 +148,7 @@ teacherEngagement: {
         questionsAnswered2: '11 593',
         questionsPerWeek2: '271'
       }
+      // ... more student rows
     ],
     summary: {
       total: {
@@ -145,97 +164,99 @@ teacherEngagement: {
     }
   },
   
-  // Dashboard data
+  // Dashboard data (used by TeacherAnalyticsPage)
   dashboard: {
     charts: {
       homeworkToClasswork: {
-        homework: { value: 7473, percentage: 59.49, color: '#103358' },
-        classwork: { value: 5104, percentage: 40.51, color: '#398AC8' }
+        data: [{ name: 'Homework', value: 7473 }, { name: 'Classwork', value: 5104 }]
       },
       timeComparison: {
-        homework: { value: 651, percentage: 76.1, color: '#103358' },
-        classwork: { value: 204, percentage: 23.9, color: '#398AC8' }
+        data: [{ name: 'Homework', value: 651 }, { name: 'Classwork', value: 204 }]
       },
       teacherEngagement: {
-        percentage: 75,
-        color: '#398AC8'
+        percentage: 75
       }
     },
     leaderboard: {
       mathematics: [
-        { code: 'P2-FF.1', name: 'Homophones with pictures', count: 14 },
-        { code: 'P2-FF.2', name: 'Multiple-meaning words', count: 13 },
-        { code: 'P2-FF.3', name: 'Synonyms and antonyms', count: 10 },
-        { code: 'P2-FF.4', name: 'Context clues', count: 9 },
-        { code: 'P2-FF.5', name: 'Word relationships', count: 8 }
+        { id: 'm1', name: 'Homophones with pictures', count: 14 },
+        { id: 'm2', name: 'Multiple-meaning words', count: 13 },
+        { id: 'm3', name: 'Choose the antonym', count: 10 },
+        { id: 'm4', name: 'Interpret remainders', count: 9 },
+        { id: 'm5', name: 'Fractions of a number', count: 9 }
       ],
       english: [
-        { code: 'P2-EE.1', name: 'Reading comprehension', count: 12 },
-        { code: 'P2-EE.2', name: 'Writing skills', count: 11 },
-        { code: 'P2-EE.3', name: 'Grammar basics', count: 9 },
-        { code: 'P2-EE.4', name: 'Vocabulary building', count: 8 },
-        { code: 'P2-EE.5', name: 'Story elements', count: 7 }
+        { id: 'e1', name: 'Homophones with pictures', count: 14 },
+        { id: 'e2', name: 'Multiple-meaning words', count: 13 },
+        { id: 'e3', name: 'Choose the antonym', count: 10 },
+        { id: 'e4', name: 'Interpret remainders', count: 9 },
+        { id: 'e5', name: 'Fractions of a number', count: 9 }
       ],
       science: [
-        { code: 'P2-SS.1', name: 'Scientific method', count: 15 },
-        { code: 'P2-SS.2', name: 'Life cycles', count: 13 },
-        { code: 'P2-SS.3', name: 'Energy forms', count: 11 },
-        { code: 'P2-SS.4', name: 'Matter properties', count: 10 },
-        { code: 'P2-SS.5', name: 'Ecosystems', count: 9 }
+        { id: 's1', name: 'Homophones with pictures', count: 14 },
+        { id: 's2', name: 'Multiple-meaning words', count: 13 },
+        { id: 's3', name: 'Choose the antonym', count: 10 },
+        { id: 's4', name: 'Interpret remainders', count: 9 },
+        { id: 's5', name: 'Fractions of a number', count: 9 }
       ]
     },
     goals: {
-      practiceTimePerWeek: 5,
-      topicsMasteredPerWeek: 5,
-      examDate: 'dd/mm/yyyy'
+      practiceTime: 5,
+      topicsMastered: 5,
+      examDate: ''
     }
   }
 };
 
-// API functions
-export const api = {
-  // Learning page
-  getLearningData: async () => {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockData.learning), 500);
-    });
-  },
-  
-  // Teacher Engagement
-  getTeacherEngagementData: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockData.teacherEngagement), 500);
-    });
-  },
-  
-  // Student Analytics
-  getStudentAnalyticsData: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockData.studentAnalytics), 500);
-    });
-  },
-  
-  // Teacher Analytics
-  getTeacherAnalyticsData: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockData.teacherAnalytics), 500);
-    });
-  },
-  
-  // Students data
-  getStudentsData: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockData.students), 500);
-    });
-  },
-  
-  // Dashboard data
-  getDashboardData: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockData.dashboard), 500);
-    });
-  }
+// --- API Functions ---
+
+// Generic fetcher function to simulate network delay
+const fetcher = (data) => {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(data), 500);
+  });
 };
 
-export default api; 
+// Learning page
+const getLearningData = async () => fetcher(mockData.learning);
+
+// Teacher Engagement
+const getTeacherEngagementData = async () => fetcher(mockData.teacherEngagement);
+
+// Student Analytics
+const getStudentAnalyticsData = async () => fetcher(mockData.studentAnalytics);
+
+// Teacher Analytics (specific charts)
+const getTeacherAnalyticsData = async () => fetcher(mockData.teacherAnalytics);
+
+// Students data table
+const getStudentsData = async () => fetcher(mockData.students);
+
+// Dashboard data (for pie charts, leaderboard, goals)
+const getDashboardData = async () => fetcher(mockData.dashboard);
+
+// Combined function for the Teacher Analytics Page to load all its data
+const getTeacherAnalyticsPageData = async () => {
+    const [analyticsData, dashboardData] = await Promise.all([
+      getTeacherAnalyticsData(),
+      getDashboardData()
+    ]);
+    return { ...analyticsData, ...dashboardData };
+};
+
+const getTeachersPageData = async () => fetcher(mockData.teachersPage);
+
+
+
+export const api = {
+  getLearningData,
+  getTeacherEngagementData,
+  getStudentAnalyticsData,
+  getTeacherAnalyticsData,
+  getStudentsData,
+  getDashboardData,
+  getTeacherAnalyticsPageData, // Use this for the main page
+  getTeachersPageData,
+};
+
+export default api;

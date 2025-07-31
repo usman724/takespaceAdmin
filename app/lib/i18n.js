@@ -1,10 +1,12 @@
+// src/lib/i18n.js
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 const resources = {
   en: {
     translation: {
-      // Navigation
+      // --- Navigation ---
       learning: 'Learning',
       analytics: 'Analytics',
       students: 'Students',
@@ -13,64 +15,66 @@ const resources = {
       account: 'Account',
       searchPlaceholder: 'Search for something',
       
-      // Learning Page
+      // --- Learning Page ---
       unitsAndTopics: 'Units and Topics',
       fractions: '5.1 Fractions',
       unitsAndTopicsSection: 'Units and Topics',
       
-      // Sidebar
+      // --- Sidebar ---
       subject: 'Subject',
       grade: 'Grade',
       
-      // Teacher Engagement
+      // --- Analytics Page Titles ---
       teacherEngagement: 'Teacher Engagement',
       studentAnalytics: 'Student Analytics',
       teacherAnalytics: 'Teacher Analytics',
+      
+      // --- Filters ---
+      gradeFilterLabel: 'GRADE',
+      subjectFilterLabel: 'SUBJECT',
+      dateRangeFilterLabel: 'DATE RANGE',
+      teachersFilterLabel: 'TEACHERS',
       sortByName: 'Sort by name',
       
-      // Filters
-      gradeFilter: 'Grade: All Grade',
-      subjectFilter: 'SUBJECT: All subjects',
-      dateRangeFilter: 'DATE RANGE: Last 30 days',
-      teachersFilter: 'TEACHERS: All',
-      
-      // Student Analytics
+      // --- Student Analytics ---
       questionAnsweredPerStudent: 'Question Answered Per Student',
       weeklyAverage: 'Weekly Average',
       monthlyAverage: 'Monthly Average',
-      goal: 'Goal: 50',
       
-      // Teacher Analytics
+      // --- Teacher Analytics ---
       homeworkQuestions: 'Homework Questions',
       classroomQuestions: 'Classroom Questions',
       
-      // Students Table
+      // --- Students Table ---
       studentCount: '{{count}} Students',
       studentName: 'Student Name',
-      teachers: 'Teacher(s)',
+      teachersLabel: 'Teacher(s)',
       year: 'Year',
       questionsAnswered: 'Questions Answered',
-      questionsAnsweredPerWeek: 'Questions Answered perweek',
+      questionsAnsweredPerWeek: 'Questions Answered per week',
       timeSpent: 'Time Spent',
       timeSpentPerWeek: 'Time Spent per week',
       seeMore: 'See 100 more',
       total: 'Total',
       average: 'Average',
       
-      // Dashboard
+      // --- Dashboard / Teacher Analytics Page ---
       questionHomeworkToClasswork: 'Question: Homework to Classwork',
-      timeHomeworkToClasswork: 'Time: Homework to Classwork',
+      timeHomeworkToClasswork: 'Time: Homework to Classwork (hour)',
       difficultTopicLeaderboard: 'Difficult Topic Leaderboard',
       mathematics: 'Mathematics',
       english: 'English',
       science: 'Science',
       defaultGoalsTitle: 'Default Goals For The Chosen Grade(s) And Subject(s)',
-      practiceTimePerWeek: 'Practice Time Per week, in hours',
-      topicsMasteredPerWeek: 'Topics Mastered Per week',
+      practiceTime: 'Practice Time',
+      practiceTimeSub: 'Per week, in hours',
+      topicsMastered: 'Topics Mastered',
+      topicsMasteredSub: 'Per week',
       examDate: 'Exam Date',
       examDatePlaceholder: 'dd/mm/yyyy',
-      
-      // Footer
+      goal: 'Goal',
+
+      // --- Footer ---
       company: 'Company',
       membership: 'Membership',
       blog: 'Blog',
@@ -85,7 +89,7 @@ const resources = {
       copyright: 'TS © 2024 Take Space. All rights reserved.',
       followUs: 'Follow us',
       
-      // Login/Signup
+      // --- Login/Signup ---
       login: 'Login',
       signup: 'Sign Up',
       email: 'Email',
@@ -96,8 +100,46 @@ const resources = {
       alreadyHaveAccount: 'Already have an account?',
       signUpHere: 'Sign up here',
       loginHere: 'Login here',
+
+       // --- Teachers Page ---
+      teachers: 'Teachers',
+      addTeacher: 'Add a Teacher',
+      filter: 'Filter',
+      options: 'Options',
       
-      // Common
+      // Table Headers
+      teacherName: 'Teacher name',
+      email: 'Email',
+      totalStudents: 'Total Students',
+
+      // Actions & Modals
+      restore: 'Restore',
+      teacherRemoved: "{{name}}'s account has been removed",
+      resetPassword: 'Reset Password',
+      exportList: 'Export Current list of teachers',
+      resetPasswordWarning: 'The current list of {{count}} teachers will receive an email with instructions to set a new password',
+      resetPasswordForOne: "Click Continue to reset {{name}}'s password. An email with instructions for setting a new password will be sent to {{email}}.",
+      continue: 'Continue',
+      cancel: 'Cancel',
+      save: 'Save',
+      submit: 'Submit',
+      
+      // Add/Edit Teacher Modal
+      personalInfo: 'Personal Info',
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      emailAddress: 'Email Address',
+      userName: 'User Name',
+      subjects: 'Subjects',
+      maths: 'Maths',
+      englishLanguage: 'English Language',
+
+      // Reset Password Form
+      currentPassword: 'Current Password',
+      newPassword: 'New Password',
+      repeatNewPassword: 'Repeat New Password',
+      
+      // --- Common ---
       loading: 'Loading...',
       error: 'Error',
       success: 'Success',
@@ -121,4 +163,4 @@ i18n
     }
   });
 
-export default i18n; 
+export default i18n;
