@@ -1,0 +1,288 @@
+{
+  "Your Account": [
+    {
+      "id": "account-1",
+      "title": "What do I do if I forget my password?",
+      "content": "You can reset your password by clicking on the 'Forgot Password' link on the login page. You'll receive an email with instructions to create a new password.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-2",
+      "title": "What are the technical requirements for TS?",
+      "content": "TakeSpase works on most modern browsers including Chrome, Firefox, Safari, and Edge. You'll need a stable internet connection and at least 2GB of RAM.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-3",
+      "title": "What should I do if I forget my username?",
+      "content": "If you've forgotten your username, you can use your email address to log in instead. You can also contact support to recover your username.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-4",
+      "title": "How do I change my password?",
+      "content": "Go to your account settings and click on 'Change Password'. You'll need to enter your current password and then create a new one.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-5",
+      "title": "How do I get an account for the TS app?",
+      "content": "You can create an account by visiting our website and clicking 'Sign Up'. You'll need to provide your email address and create a password.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-6",
+      "title": "How can I change my profile icon?",
+      "content": "In your profile settings, click on your current profile picture and upload a new image. Supported formats include JPG, PNG, and GIF.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-7",
+      "title": "Why can't I sign in?",
+      "content": "Check that you're using the correct email and password. If you're still having trouble, try resetting your password or contact support.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-8",
+      "title": "How do I contact technical support?",
+      "content": "You can contact our technical support team through the help center, by email, or by using the contact form on our website.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-9",
+      "title": "How do I update my email address?",
+      "content": "Go to your account settings and click on 'Edit Profile'. You can change your email address there, but you'll need to verify the new email.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-10",
+      "title": "What are the system requirements?",
+      "content": "TakeSpase requires a modern web browser, stable internet connection, and at least 2GB of RAM. For optimal performance, we recommend 4GB or more.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-11",
+      "title": "How do I enable two-factor authentication?",
+      "content": "In your security settings, you can enable two-factor authentication. You'll need to download an authenticator app and scan a QR code.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-12",
+      "title": "How do I export my data?",
+      "content": "You can export your data by going to your account settings and clicking 'Export Data'. This will download all your information in a ZIP file.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-13",
+      "title": "How do I delete my account?",
+      "content": "To delete your account, go to your account settings and click 'Delete Account'. Please note that this action cannot be undone.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-14",
+      "title": "How do I change my notification settings?",
+      "content": "You can manage your notification preferences in your account settings under the 'Notifications' tab. You can choose which types of notifications to receive.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-15",
+      "title": "How do I manage my privacy settings?",
+      "content": "Your privacy settings can be found in your account settings. You can control who can see your profile and what information is shared.",
+      "category": "Your Account"
+    },
+    {
+      "id": "account-16",
+      "title": "How do I report a bug?",
+      "content": "You can report bugs by using the 'Report Issue' feature in the help center or by contacting our support team directly.",
+      "category": "Your Account"
+    }
+  ],
+  "Learning": [
+    {
+      "id": "learning-1",
+      "title": "How do I start a new lesson?",
+      "content": "To start a new lesson, navigate to the learning section and click on the lesson you want to begin. You can also use the search function to find specific topics.",
+      "category": "Learning"
+    },
+    {
+      "id": "learning-2",
+      "title": "How do I track my progress?",
+      "content": "Your progress is automatically tracked as you complete lessons and quizzes. You can view your progress in the analytics section of your dashboard.",
+      "category": "Learning"
+    },
+    {
+      "id": "learning-3",
+      "title": "How do I access my learning materials?",
+      "content": "All your learning materials are available in the learning section. You can filter by subject, difficulty level, or search for specific topics.",
+      "category": "Learning"
+    },
+    {
+      "id": "learning-4",
+      "title": "How do I take quizzes?",
+      "content": "Quizzes are available at the end of each lesson. Click on the quiz to start, and you can review your answers before submitting.",
+      "category": "Learning"
+    },
+    {
+      "id": "learning-5",
+      "title": "How do I review completed lessons?",
+      "content": "You can review completed lessons by going to your learning history. This allows you to revisit content and refresh your knowledge.",
+      "category": "Learning"
+    }
+  ],
+  "Analytics": [
+    {
+      "id": "analytics-1",
+      "title": "How do I view my learning analytics?",
+      "content": "Your learning analytics are available in the analytics section. You can view detailed reports on your progress, time spent, and performance.",
+      "category": "Analytics"
+    },
+    {
+      "id": "analytics-2",
+      "title": "How do I understand my progress charts?",
+      "content": "Progress charts show your learning journey over time. Green indicates improvement, yellow shows steady progress, and red may indicate areas needing attention.",
+      "category": "Analytics"
+    },
+    {
+      "id": "analytics-3",
+      "title": "How do I export my analytics data?",
+      "content": "You can export your analytics data by clicking the 'Export' button in the analytics section. This will download your data in CSV format.",
+      "category": "Analytics"
+    },
+    {
+      "id": "analytics-4",
+      "title": "How do I compare my performance?",
+      "content": "The analytics section allows you to compare your performance across different subjects and time periods. You can also compare with class averages.",
+      "category": "Analytics"
+    }
+  ],
+  "Personal data": [
+    {
+      "id": "personal-1",
+      "title": "How do I update my personal information?",
+      "content": "You can update your personal information in your account settings. Click on 'Edit Profile' to make changes to your name, email, or other details.",
+      "category": "Personal data"
+    },
+    {
+      "id": "personal-2",
+      "title": "How do I manage my privacy settings?",
+      "content": "Privacy settings are located in your account settings. You can control who can see your profile and what information is shared with others.",
+      "category": "Personal data"
+    },
+    {
+      "id": "personal-3",
+      "title": "How do I download my data?",
+      "content": "You can download your personal data by going to your account settings and clicking 'Download Data'. This will include all your information in a readable format.",
+      "category": "Personal data"
+    },
+    {
+      "id": "personal-4",
+      "title": "How do I delete my personal data?",
+      "content": "To delete your personal data, go to your account settings and click 'Delete Data'. You can choose which specific data to delete.",
+      "category": "Personal data"
+    }
+  ],
+  "Teachers": [
+    {
+      "id": "teachers-1",
+      "title": "How do I contact my teachers?",
+      "content": "You can contact your teachers through the messaging system in the platform. Go to the teachers section and click on the teacher you want to message.",
+      "category": "Teachers"
+    },
+    {
+      "id": "teachers-2",
+      "title": "How do I view teacher profiles?",
+      "content": "Teacher profiles are available in the teachers section. You can view their qualifications, subjects taught, and contact information.",
+      "category": "Teachers"
+    },
+    {
+      "id": "teachers-3",
+      "title": "How do I schedule sessions with teachers?",
+      "content": "You can schedule sessions with teachers by going to the booking section. Select the teacher, choose a time slot, and confirm your booking.",
+      "category": "Teachers"
+    },
+    {
+      "id": "teachers-4",
+      "title": "How do I provide feedback to teachers?",
+      "content": "After each session, you can provide feedback through the rating system. You can also leave detailed comments about your experience.",
+      "category": "Teachers"
+    }
+  ],
+  "Family Members": [
+    {
+      "id": "family-1",
+      "title": "How do I add family members?",
+      "content": "You can add family members in your account settings under the 'Family' section. You'll need their email address to send them an invitation.",
+      "category": "Family Members"
+    },
+    {
+      "id": "family-2",
+      "title": "How do I manage family member access?",
+      "content": "Family member access can be managed in your account settings. You can control what information they can see and what actions they can take.",
+      "category": "Family Members"
+    },
+    {
+      "id": "family-3",
+      "title": "How do I view family member progress?",
+      "content": "You can view family member progress in the family section. This shows their learning activities and achievements.",
+      "category": "Family Members"
+    },
+    {
+      "id": "family-4",
+      "title": "How do I set up parental controls?",
+      "content": "Parental controls can be set up in your account settings. You can restrict access to certain features and set time limits.",
+      "category": "Family Members"
+    }
+  ],
+  "Classroom & School": [
+    {
+      "id": "classroom-1",
+      "title": "How do I join a classroom?",
+      "content": "To join a classroom, you'll need an invitation code from your teacher. Enter the code in the 'Join Classroom' section to get started.",
+      "category": "Classroom & School"
+    },
+    {
+      "id": "classroom-2",
+      "title": "How do I view school announcements?",
+      "content": "School announcements are displayed in the classroom section. You can also receive notifications when new announcements are posted.",
+      "category": "Classroom & School"
+    },
+    {
+      "id": "classroom-3",
+      "title": "How do I access school resources?",
+      "content": "School resources are available in the classroom section. You can browse by subject or search for specific materials.",
+      "category": "Classroom & School"
+    },
+    {
+      "id": "classroom-4",
+      "title": "How do I communicate with classmates?",
+      "content": "You can communicate with classmates through the messaging system. Go to the classroom section and click on the messaging tab.",
+      "category": "Classroom & School"
+    }
+  ],
+  "Integrations": [
+    {
+      "id": "integrations-1",
+      "title": "How do I connect third-party apps?",
+      "content": "You can connect third-party apps in the integrations section. Click on the app you want to connect and follow the authorization process.",
+      "category": "Integrations"
+    },
+    {
+      "id": "integrations-2",
+      "title": "How do I sync with Google Classroom?",
+      "content": "To sync with Google Classroom, go to the integrations section and click on Google Classroom. You'll need to authorize the connection.",
+      "category": "Integrations"
+    },
+    {
+      "id": "integrations-3",
+      "title": "How do I integrate with Zoom?",
+      "content": "Zoom integration can be set up in the integrations section. You'll need to provide your Zoom account credentials.",
+      "category": "Integrations"
+    },
+    {
+      "id": "integrations-4",
+      "title": "How do I connect my calendar?",
+      "content": "You can connect your calendar in the integrations section. This will sync your learning sessions with your personal calendar.",
+      "category": "Integrations"
+    }
+  ]
+} 

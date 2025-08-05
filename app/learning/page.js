@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/layout/Layout';
+import Sidebar from '../components/layout/Sidebar';
 import I18nProvider from '../components/providers/I18nProvider';
 import TopicsDisplay from '../components/learning/TopicsDisplay';
 import { api } from '../lib/api';
@@ -46,8 +47,15 @@ const LearningPage = () => {
 
   return (
     <I18nProvider>
-      <Layout sidebarData={learningData}>
-        <div className="p-4 sm:p-6 lg:p-8">
+      <Layout>
+        {/* Sidebar */}
+        <Sidebar
+          subjects={learningData?.subjects || []}
+          grades={learningData?.grades || []}
+        />
+        
+        {/* Main Content */}
+        <div className="ml-[250px] p-4 sm:p-6 lg:p-8">
           {/* Page Title */}
           <h1 
             className="mb-6 sm:mb-8"
