@@ -75,7 +75,7 @@ export default function PieChart({ title, data, colors }) {
       <div
         className="bg-white rounded-xl relative"
         style={{
-          border: '1px solid #D7D7D7',
+       
           width: '100%',
           height: '400px',
           padding: '26px 47px 55px 46px' // Top Right Bottom Left
