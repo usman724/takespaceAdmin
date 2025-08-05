@@ -142,7 +142,7 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
       Header: t('teacherName'),
       accessor: 'name',
       Cell: ({ value }) => (
-        <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal">
+        <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal font-['Poppins']">
           {value}
         </span>
       )
@@ -151,7 +151,7 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
       Header: t('email'),
       accessor: 'email',
       Cell: ({ value }) => (
-        <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal">
+        <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal font-['Poppins']">
           {value}
         </span>
       )
@@ -160,7 +160,7 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
       Header: t('totalStudents'),
       accessor: 'totalStudents',
       Cell: ({ value }) => (
-        <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal">
+        <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal font-['Poppins']">
           {value}
         </span>
       )
@@ -217,6 +217,28 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
     usePagination
   );
 
+  // Calculate which pages to show (max 4 pages)
+  const getVisiblePages = () => {
+    const totalPages = pageCount;
+    const currentPage = pageIndex + 1;
+    
+    if (totalPages <= 4) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    if (currentPage <= 2) {
+      return [1, 2, 3, 4];
+    }
+    
+    if (currentPage >= totalPages - 1) {
+      return [totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    
+    return [currentPage - 1, currentPage, currentPage + 1, currentPage + 2];
+  };
+
+  const visiblePages = getVisiblePages();
+
   return (
     <div className="overflow-x-auto">
       <table {...getTableProps()} className="w-full border-collapse">
@@ -243,14 +265,14 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
             return (
               <tr 
                 {...row.getRowProps()} 
-                className={`border-b border-[#E0E0E0] ${isDeleted ? 'bg-[#398AC8] text-white' : 'bg-white hover:bg-gray-50 cursor-pointer'}`}
+                className={`border-b border-[#E0E0E0] ${isDeleted ? 'bg-[#398AC8] text-white' : 'bg-[#F8F9FA] hover:bg-[#E3F2FD] cursor-pointer'}`}
                 onClick={!isDeleted ? () => onTeacherClick(teacher) : undefined}
               >
                 {isDeleted ? (
                   // Show restore message when teacher is deleted
                   <td colSpan={4} className="px-6 py-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-white text-[14px] leading-[24px] font-normal">
+                      <span className="text-white text-[14px] leading-[24px] font-normal font-['Poppins']">
                         {deletedTeacher.name}'s account has been removed
                       </span>
                       <button 
@@ -258,7 +280,7 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
                           e.stopPropagation();
                           onRestore();
                         }} 
-                        className="bg-white text-[#398AC8] px-4 py-2 rounded font-medium text-[14px] leading-[24px] font-normal"
+                        className="bg-white text-[#398AC8] px-4 py-2 rounded font-medium text-[14px] leading-[24px] font-['Poppins']"
                       >
                         Restore
                       </button>
@@ -280,23 +302,62 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
       
       {/* Pagination with Figma styling */}
       {pageCount > 1 && (
-        <div className="flex justify-end items-center gap-2 py-4">
+        <div className="flex justify-end mr-8 items-center gap-2 py-4">
+          {/* Previous Button */}
           <button
             onClick={() => previousPage()}
             disabled={!canPreviousPage}
-            className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
+            className={`w-8 h-8 flex items-center justify-center text-[14px] font-normal leading-[20px] font-['Poppins'] ${
+              canPreviousPage 
+                ? 'text-[#103358] hover:bg-gray-100 rounded' 
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
           >
-            Previous
+            <img src="/common/arrowleft.svg" alt="Arrow left" className="w-4 h-4" />
           </button>
-          <span className="text-sm">
-            Page {pageIndex + 1} of {pageOptions.length}
-          </span>
+          
+          {/* Page Numbers */}
+          {visiblePages.map((pageNum, index) => {
+            const isActive = pageNum === pageIndex + 1;
+            const isFirst = index === 0;
+            const isLast = index === visiblePages.length - 1;
+            const showEllipsisBefore = isFirst && pageNum > 1;
+            const showEllipsisAfter = isLast && pageNum < pageCount;
+            
+            return (
+              <div key={pageNum} className="flex items-center gap-1">
+                {showEllipsisBefore && (
+                  <span className="px-2 text-[#103358]">...</span>
+                )}
+                <button
+                  onClick={() => gotoPage(pageNum - 1)}
+                  className={`w-8 h-8 flex items-center justify-center text-[14px] font-normal leading-[20px] font-['Poppins'] ${
+                    isActive 
+                      ? 'bg-white border border-[#103358] rounded-[4px] text-[#103358]' 
+                      : 'text-[#103358] hover:bg-gray-100 rounded'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+                {showEllipsisAfter && (
+                  <span className="px-2 text-[#103358]">...</span>
+                )}
+              </div>
+            );
+          })}
+          
+          {/* Next Button */}
           <button
             onClick={() => nextPage()}
             disabled={!canNextPage}
-            className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
+            className={`w-8 h-8 flex items-center justify-center text-[14px] font-normal leading-[20px] font-['Poppins'] ${
+              canNextPage 
+                ? 'text-[#103358] hover:bg-gray-100 rounded' 
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
           >
-            Next
+                       <img src="/common/arrowright.svg" alt="Arrow left" className="w-4 h-4" />
+
           </button>
         </div>
       )}
