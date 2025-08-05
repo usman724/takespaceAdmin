@@ -63,9 +63,8 @@ const FilterDropdown = ({ isOpen, onClose, subjects, selectedSubject, onSubjectC
                 ))}
               </select>
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg width="15" height="9" viewBox="0 0 15 9" fill="none">
-                  <path d="M1 1L7.5 7L14 1" stroke="#103358" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                                                 <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+
               </div>
             </div>
           </div>
@@ -110,9 +109,8 @@ const OptionsDropdown = ({ isOpen, onClose, onResetPassword, onExportTeachers })
         <div className="p-4 pb-3 border-b border-[rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-between">
             <span className="text-[14px] text-[#103358] font-normal">Options</span>
-            <svg width="15" height="9" viewBox="0 0 15 9" fill="none">
-              <path d="M1 1L7.5 7L14 1" stroke="#103358" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+                                             <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+
           </div>
         </div>
         <div className="py-1">
@@ -433,10 +431,8 @@ const TeachersPage = () => {
                                 onClick={() => setModal({ type: 'add', isOpen: true })} 
                                 className="flex items-center justify-center gap-[10px] px-[19px] py-[10px] bg-[#103358] text-white rounded-[5px] w-[166px] h-[40px]"
                             >
-                                <svg width="14" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                                </svg>
-                                <span className="text-[14px] font-medium leading-[20px] font-['Poppins']">
+                                <img src="/teacher/add-teacher.svg" alt="Add Teacher" className="w-5 h-5" />
+                                <span className="text-[14px] font-bold leading-[20px] ">
                                     {t('addTeacher')}
                                 </span>
                             </button>
@@ -444,9 +440,9 @@ const TeachersPage = () => {
                             {/* Info Icon */}
                             <button 
                                 onClick={handleHelpClick}
-                                className="w-[40px] h-[40px] bg-[#398AC8] rounded-full flex items-center justify-center"
+                                className="w-[40px] h-[40px]"
                             >
-                                <span className="text-white text-lg font-bold">i</span>
+                                <img src="/teacher/info.svg" alt="Add Teacher" className="w-[40px] h-[40px]" />
                             </button>
                         </div>
                     </header>
@@ -459,15 +455,13 @@ const TeachersPage = () => {
                                 onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
                                 className="flex items-center justify-center gap-[10px] px-[19px] py-[10px] bg-white border border-[#F2F2F2] rounded-[10px] w-[119.83px] h-[40px]"
                             >
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                                </svg>
+                                 <img src="/teacher/filter.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
                                 <span className="text-[14px] font-normal leading-[20px] text-[#103358] font-['Poppins']">
                                     Filter
                                 </span>
-                                <svg width="11.83" height="6.73" viewBox="0 0 12 7" fill="none">
-                                    <path d="M1 1L6 6L11 1" stroke="#103358" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
+                                  
+                                  <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+
                             </button>
                             
                             <FilterDropdown 
@@ -489,9 +483,8 @@ const TeachersPage = () => {
                                 <span className="text-[14px] font-normal leading-[20px] text-[#103358] font-['Poppins']">
                                     Options
                                 </span>
-                                <svg width="11.83" height="6.73" viewBox="0 0 12 7" fill="none">
-                                    <path d="M1 1L6 6L11 1" stroke="#103358" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
+                                                                 <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+
                             </button>
                             
                             <OptionsDropdown 
