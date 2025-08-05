@@ -1,0 +1,1682 @@
+  teacher
+  --components
+  ----Modal
+--page.js
+----- Content of page.js ---
+--    'use client';
+--    
+--    import { useState, useEffect, useRef, useMemo } from 'react';
+--    import { useTranslation } from 'react-i18next';
+--    import { useRouter } from 'next/navigation';
+--    import { useTable, usePagination, useFilters, useSortBy } from 'react-table';
+--    import Layout from '../components/layout/Layout';
+--    import I18nProvider from '../components/providers/I18nProvider';
+--    import { AddTeacherModal, ResetPasswordModal } from './components/Modal';
+--    import TeacherDetailsModal from './components/Modal/TeacherDetailsModal';
+--    import { api } from '../lib/api';
+--    import '../lib/i18n';
+--    
+--    // --- Reusable Components ---
+--    
+--    const Modal = ({ isOpen, onClose, children, className = '' }) => {
+--      if (!isOpen) return null;
+--      return (
+--        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+--          <div className="fixed inset-0 bg-[#103358] bg-opacity-40" onClick={onClose}></div>
+--          <div className={`relative bg-white rounded-[30px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] w-full ${className}`}>
+--            {children}
+--          </div>
+--        </div>
+--      );
+--    };
+--    
+--    // Filter Dropdown Component
+--    const FilterDropdown = ({ isOpen, onClose, subjects, selectedSubject, onSubjectChange, onApply }) => {
+--      const { t } = useTranslation();
+--      const dropdownRef = useRef(null);
+--    
+--      useEffect(() => {
+--        const handleClickOutside = (event) => {
+--          if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+--            onClose();
+--          }
+--        };
+--        if (isOpen) {
+--          document.addEventListener('mousedown', handleClickOutside);
+--        }
+--        return () => {
+--          document.removeEventListener('mousedown', handleClickOutside);
+--        };
+--      }, [isOpen, onClose]);
+--    
+--      if (!isOpen) return null;
+--    
+--      return (
+--        <div className="absolute top-full right-0 mt-2 z-50">
+--          <div ref={dropdownRef} className="bg-white border border-[rgba(0,0,0,0.05)] shadow-[0px_0px_25px_rgba(0,0,0,0.05)] rounded-b-[10px] w-[373px]">
+--            <div className="flex flex-col justify-center items-start p-4 pt-4 pb-6 gap-[18px]">
+--              <div className="w-full">
+--                <div className="text-[14px] text-[#1D1D1D] font-normal mb-2">Subjects:</div>
+--                <div className="relative">
+--                  <select 
+--                    value={selectedSubject} 
+--                    onChange={(e) => onSubjectChange(e.target.value)}
+--                    className="w-full h-[43px] bg-[#F7F7F7] border-none rounded-[6px] px-4 pr-10 text-[14px] text-[#4F4F4F] font-normal appearance-none"
+--                  >
+--                    <option value="">Any</option>
+--                    {subjects.map(subject => (
+--                      <option key={subject} value={subject}>{t(subject.toLowerCase())}</option>
+--                    ))}
+--                  </select>
+--                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+--                                                     <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+--    
+--                  </div>
+--                </div>
+--              </div>
+--              <div className="flex justify-center w-full">
+--                <button 
+--                  onClick={onApply}
+--                  className="flex items-center justify-center px-4 py-2 bg-[#16375A] text-white rounded-lg text-[16px] font-normal w-[121px] h-[40px]"
+--                >
+--                  Apply
+--                </button>
+--              </div>
+--            </div>
+--          </div>
+--        </div>
+--      );
+--    };
+--    
+--    // Options Dropdown Component
+--    const OptionsDropdown = ({ isOpen, onClose, onResetPassword, onExportTeachers }) => {
+--      const { t } = useTranslation();
+--      const dropdownRef = useRef(null);
+--    
+--      useEffect(() => {
+--        const handleClickOutside = (event) => {
+--          if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+--            onClose();
+--          }
+--        };
+--        if (isOpen) {
+--          document.addEventListener('mousedown', handleClickOutside);
+--        }
+--        return () => {
+--          document.removeEventListener('mousedown', handleClickOutside);
+--        };
+--      }, [isOpen, onClose]);
+--    
+--      if (!isOpen) return null;
+--    
+--      return (
+--        <div className="absolute top-full right-0 mt-2 z-50">
+--          <div ref={dropdownRef} className="bg-white border border-[rgba(0,0,0,0.05)] shadow-[0px_0px_25px_rgba(0,0,0,0.05)] rounded-b-[10px] w-[249px]">
+--            <div className="p-4 pb-3 border-b border-[rgba(0,0,0,0.05)]">
+--              <div className="flex items-center justify-between">
+--                <span className="text-[14px] text-[#103358] font-normal">Options</span>
+--                                                 <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+--    
+--              </div>
+--            </div>
+--            <div className="py-1">
+--              <button 
+--                onClick={onResetPassword}
+--                className="w-full text-left px-4 py-2 text-[14px] text-[#1D1D1D] font-normal hover:bg-gray-50 rounded"
+--              >
+--                Reset Password
+--              </button>
+--              <button 
+--                onClick={onExportTeachers}
+--                className="w-full text-left px-4 py-2 text-[14px] text-[#1D1D1D] font-normal hover:bg-gray-50 rounded"
+--              >
+--                Export Current list of teachers
+--              </button>
+--            </div>
+--          </div>
+--        </div>
+--      );
+--    };
+--    
+--    // React Table Component with Figma styling
+--    const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onRestore }) => {
+--      const { t } = useTranslation();
+--    
+--      const columns = useMemo(() => [
+--        {
+--          Header: t('teacherName'),
+--          accessor: 'name',
+--          Cell: ({ value }) => (
+--            <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal font-['Poppins']">
+--              {value}
+--            </span>
+--          )
+--        },
+--        {
+--          Header: t('email'),
+--          accessor: 'email',
+--          Cell: ({ value }) => (
+--            <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal font-['Poppins']">
+--              {value}
+--            </span>
+--          )
+--        },
+--        {
+--          Header: t('totalStudents'),
+--          accessor: 'totalStudents',
+--          Cell: ({ value }) => (
+--            <span className="text-[14px] leading-[24px] text-[#4E4B66] font-normal font-['Poppins']">
+--              {value}
+--            </span>
+--          )
+--        },
+--        {
+--          Header: '',
+--          accessor: 'actions',
+--          Cell: ({ row }) => {
+--            const teacher = row.original;
+--            const isDeleted = deletedTeacher && deletedTeacher.id === teacher.id;
+--            
+--            return (
+--              <button 
+--                onClick={(e) => { 
+--                  e.stopPropagation(); 
+--                  if (!isDeleted) {
+--                    onDelete(teacher); 
+--                  }
+--                }} 
+--                className={`${isDeleted ? 'hidden' : 'text-red-500 hover:text-red-700'}`}
+--              >
+--                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+--                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+--                </svg>
+--              </button>
+--            );
+--          }
+--        }
+--      ], [t, onDelete, deletedTeacher]);
+--    
+--      const {
+--        getTableProps,
+--        getTableBodyProps,
+--        headerGroups,
+--        page,
+--        prepareRow,
+--        canPreviousPage,
+--        canNextPage,
+--        pageOptions,
+--        pageCount,
+--        gotoPage,
+--        nextPage,
+--        previousPage,
+--        setPageSize,
+--        state: { pageIndex, pageSize }
+--      } = useTable(
+--        {
+--          columns,
+--          data,
+--          initialState: { pageIndex: 0, pageSize: 10 }
+--        },
+--        useFilters,
+--        useSortBy,
+--        usePagination
+--      );
+--    
+--      // Calculate which pages to show (max 4 pages)
+--      const getVisiblePages = () => {
+--        const totalPages = pageCount;
+--        const currentPage = pageIndex + 1;
+--        
+--        if (totalPages <= 4) {
+--          return Array.from({ length: totalPages }, (_, i) => i + 1);
+--        }
+--        
+--        if (currentPage <= 2) {
+--          return [1, 2, 3, 4];
+--        }
+--        
+--        if (currentPage >= totalPages - 1) {
+--          return [totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+--        }
+--        
+--        return [currentPage - 1, currentPage, currentPage + 1, currentPage + 2];
+--      };
+--    
+--      const visiblePages = getVisiblePages();
+--    
+--      return (
+--        <div className="overflow-x-auto">
+--          <table {...getTableProps()} className="w-full border-collapse">
+--            <thead>
+--              {headerGroups.map(headerGroup => (
+--                <tr {...headerGroup.getHeaderGroupProps()} className="bg-[#16375A] text-white rounded-t-lg">
+--                  {headerGroup.headers.map(column => (
+--                    <th 
+--                      {...column.getHeaderProps(column.getSortByToggleProps())}
+--                      className="px-6 py-4 text-left font-medium text-[16px] leading-[24px]"
+--                    >
+--                      {column.render('Header')}
+--                    </th>
+--                  ))}
+--                </tr>
+--              ))}
+--            </thead>
+--            <tbody {...getTableBodyProps()}>
+--              {page.map(row => {
+--                prepareRow(row);
+--                const teacher = row.original;
+--                const isDeleted = deletedTeacher && deletedTeacher.id === teacher.id;
+--                
+--                return (
+--                  <tr 
+--                    {...row.getRowProps()} 
+--                    className={`border-b border-[#E0E0E0] ${isDeleted ? 'bg-[#398AC8] text-white' : 'bg-[#F8F9FA] hover:bg-[#E3F2FD] cursor-pointer'}`}
+--                    onClick={!isDeleted ? () => onTeacherClick(teacher) : undefined}
+--                  >
+--                    {isDeleted ? (
+--                      // Show restore message when teacher is deleted
+--                      <td colSpan={4} className="px-6 py-4">
+--                        <div className="flex justify-between items-center">
+--                          <span className="text-white text-[14px] leading-[24px] font-normal font-['Poppins']">
+--                            {deletedTeacher.name}'s account has been removed
+--                          </span>
+--                          <button 
+--                            onClick={(e) => {
+--                              e.stopPropagation();
+--                              onRestore();
+--                            }} 
+--                            className="bg-white text-[#398AC8] px-4 py-2 rounded font-medium text-[14px] leading-[24px] font-['Poppins']"
+--                          >
+--                            Restore
+--                          </button>
+--                        </div>
+--                      </td>
+--                    ) : (
+--                      // Show normal teacher data
+--                      row.cells.map(cell => (
+--                        <td {...cell.getCellProps()} className="px-6 py-4">
+--                          {cell.render('Cell')}
+--                        </td>
+--                      ))
+--                    )}
+--                  </tr>
+--                );
+--              })}
+--            </tbody>
+--          </table>
+--          
+--          {/* Pagination with Figma styling */}
+--          {pageCount > 1 && (
+--            <div className="flex justify-end mr-8 items-center gap-2 py-4">
+--              {/* Previous Button */}
+--              <button
+--                onClick={() => previousPage()}
+--                disabled={!canPreviousPage}
+--                className={`w-8 h-8 flex items-center justify-center text-[14px] font-normal leading-[20px] font-['Poppins'] ${
+--                  canPreviousPage 
+--                    ? 'text-[#103358] hover:bg-gray-100 rounded' 
+--                    : 'text-gray-400 cursor-not-allowed'
+--                }`}
+--              >
+--                <img src="/common/arrowleft.svg" alt="Arrow left" className="w-4 h-4" />
+--              </button>
+--              
+--              {/* Page Numbers */}
+--              {visiblePages.map((pageNum, index) => {
+--                const isActive = pageNum === pageIndex + 1;
+--                const isFirst = index === 0;
+--                const isLast = index === visiblePages.length - 1;
+--                const showEllipsisBefore = isFirst && pageNum > 1;
+--                const showEllipsisAfter = isLast && pageNum < pageCount;
+--                
+--                return (
+--                  <div key={pageNum} className="flex items-center gap-1">
+--                    {showEllipsisBefore && (
+--                      <span className="px-2 text-[#103358]">...</span>
+--                    )}
+--                    <button
+--                      onClick={() => gotoPage(pageNum - 1)}
+--                      className={`w-8 h-8 flex items-center justify-center text-[14px] font-normal leading-[20px] font-['Poppins'] ${
+--                        isActive 
+--                          ? 'bg-white border border-[#103358] rounded-[4px] text-[#103358]' 
+--                          : 'text-[#103358] hover:bg-gray-100 rounded'
+--                      }`}
+--                    >
+--                      {pageNum}
+--                    </button>
+--                    {showEllipsisAfter && (
+--                      <span className="px-2 text-[#103358]">...</span>
+--                    )}
+--                  </div>
+--                );
+--              })}
+--              
+--              {/* Next Button */}
+--              <button
+--                onClick={() => nextPage()}
+--                disabled={!canNextPage}
+--                className={`w-8 h-8 flex items-center justify-center text-[14px] font-normal leading-[20px] font-['Poppins'] ${
+--                  canNextPage 
+--                    ? 'text-[#103358] hover:bg-gray-100 rounded' 
+--                    : 'text-gray-400 cursor-not-allowed'
+--                }`}
+--              >
+--                           <img src="/common/arrowright.svg" alt="Arrow left" className="w-4 h-4" />
+--    
+--              </button>
+--            </div>
+--          )}
+--        </div>
+--      );
+--    };
+--    
+--    // Modal components are now imported from separate files
+--    
+--    // --- Main Page Component ---
+--    
+--    const TeachersPage = () => {
+--        const { t } = useTranslation();
+--        const router = useRouter();
+--        const [pageData, setPageData] = useState({ teachers: [], subjects: [] });
+--        const [loading, setLoading] = useState(true);
+--        const [modal, setModal] = useState({ type: null, isOpen: false });
+--        const [deletedTeacher, setDeletedTeacher] = useState(null);
+--        const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+--        const [optionsDropdownOpen, setOptionsDropdownOpen] = useState(false);
+--        const [selectedSubject, setSelectedSubject] = useState('');
+--        const [filteredTeachers, setFilteredTeachers] = useState([]);
+--        const [selectedTeacher, setSelectedTeacher] = useState(null);
+--        const [teacherDetailsModalOpen, setTeacherDetailsModalOpen] = useState(false);
+--    
+--        useEffect(() => {
+--            const fetchData = async () => {
+--                try {
+--                    const data = await api.getTeachersPageData();
+--                    setPageData(data);
+--                    setFilteredTeachers(data.teachers);
+--                } catch (error) {
+--                    console.error("Failed to fetch data:", error);
+--                } finally {
+--                    setLoading(false);
+--                }
+--            };
+--            fetchData();
+--        }, []);
+--    
+--        // Apply filter
+--        const applyFilter = () => {
+--            if (!selectedSubject) {
+--                setFilteredTeachers(pageData.teachers);
+--            } else {
+--                setFilteredTeachers(pageData.teachers.filter(teacher => 
+--                    teacher.subjects && teacher.subjects.includes(selectedSubject)
+--                ));
+--            }
+--            setFilterDropdownOpen(false);
+--        };
+--    
+--        // Handle removed teacher display
+--        const getRemovedTeacher = () => {
+--            return filteredTeachers.find(teacher => teacher.status === 'removed');
+--        };
+--    
+--        const getActiveTeachers = () => {
+--            return filteredTeachers.filter(teacher => teacher.status !== 'removed');
+--        };
+--    
+--        const handleDelete = (teacherToDelete) => {
+--            // Mark the teacher as removed instead of filtering out
+--            const updatedTeacher = { ...teacherToDelete, status: 'removed' };
+--            setDeletedTeacher(updatedTeacher);
+--            
+--            // Update the teacher status in both arrays
+--            setPageData(prev => ({
+--                ...prev,
+--                teachers: prev.teachers.map(t => 
+--                    t.id === teacherToDelete.id ? updatedTeacher : t
+--                )
+--            }));
+--            setFilteredTeachers(prev => prev.map(t => 
+--                t.id === teacherToDelete.id ? updatedTeacher : t
+--            ));
+--        };
+--    
+--        const handleRestore = () => {
+--            if (deletedTeacher) {
+--                // Restore the teacher by changing status back to active
+--                const restoredTeacher = { ...deletedTeacher, status: 'active' };
+--                
+--                setPageData(prev => ({
+--                    ...prev,
+--                    teachers: prev.teachers.map(t => 
+--                        t.id === deletedTeacher.id ? restoredTeacher : t
+--                    )
+--                }));
+--                setFilteredTeachers(prev => prev.map(t => 
+--                    t.id === deletedTeacher.id ? restoredTeacher : t
+--                ));
+--                setDeletedTeacher(null);
+--            }
+--        };
+--    
+--        const handleAddTeacher = (newTeacherData) => {
+--            const newTeacher = {
+--                id: pageData.teachers.length + 2,
+--                name: `${newTeacherData.firstName} ${newTeacherData.lastName}`,
+--                email: newTeacherData.email,
+--                totalStudents: 0,
+--                status: 'active',
+--                subjects: newTeacherData.subjects,
+--            };
+--            setPageData(prev => ({
+--                ...prev,
+--                teachers: [...prev.teachers, newTeacher]
+--            }));
+--            setFilteredTeachers(prev => [...prev, newTeacher]);
+--        };
+--    
+--        const handleResetPassword = () => {
+--            setModal({ type: 'reset', isOpen: true });
+--            setOptionsDropdownOpen(false);
+--        };
+--    
+--        const handleExportTeachers = () => {
+--            // Export functionality
+--            const csvContent = "data:text/csv;charset=utf-8," 
+--                + "Name,Email,Total Students\n"
+--                + filteredTeachers.map(teacher => 
+--                    `${teacher.name},${teacher.email},${teacher.totalStudents}`
+--                ).join("\n");
+--            
+--            const encodedUri = encodeURI(csvContent);
+--            const link = document.createElement("a");
+--            link.setAttribute("href", encodedUri);
+--            link.setAttribute("download", "teachers_list.csv");
+--            document.body.appendChild(link);
+--            link.click();
+--            document.body.removeChild(link);
+--            setOptionsDropdownOpen(false);
+--        };
+--    
+--        const handleHelpClick = () => {
+--            router.push('/help');
+--        };
+--    
+--        // Handle teacher click to open details modal
+--        const handleTeacherClick = (teacher) => {
+--            setSelectedTeacher(teacher);
+--            setTeacherDetailsModalOpen(true);
+--        };
+--    
+--        // Handle reset password from teacher details modal
+--        const handleTeacherResetPassword = () => {
+--            setTeacherDetailsModalOpen(false);
+--            setModal({ type: 'reset', isOpen: true });
+--        };
+--    
+--        // Handle edit subjects from teacher details modal
+--        const handleEditSubjects = (newSubjects) => {
+--            if (selectedTeacher) {
+--                const updatedTeacher = { ...selectedTeacher, subjects: newSubjects };
+--                setPageData(prev => ({
+--                    ...prev,
+--                    teachers: prev.teachers.map(t => 
+--                        t.id === selectedTeacher.id ? updatedTeacher : t
+--                    )
+--                }));
+--                setFilteredTeachers(prev => prev.map(t => 
+--                    t.id === selectedTeacher.id ? updatedTeacher : t
+--                ));
+--            }
+--        };
+--    
+--        const activeTeachers = getActiveTeachers();
+--        const removedTeacher = getRemovedTeacher();
+--    
+--        if (loading) {
+--            return <I18nProvider><Layout><div className="flex justify-center items-center h-screen">{t('loading')}</div></Layout></I18nProvider>;
+--        }
+--    
+--        return (
+--            <I18nProvider>
+--                <Layout>
+--                    <div className="p-8">
+--                        {/* Header Section */}
+--                        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+--                            {/* Teachers Heading */}
+--                            <h1 className="text-[22px] font-semibold text-[#103358] leading-[27px] font-['Inter']">
+--                                {t('teachers')}
+--                            </h1>
+--                            
+--                            {/* Right side buttons */}
+--                            <div className="flex items-center gap-2 sm:gap-4">
+--                                {/* Add Teacher Button */}
+--                                <button 
+--                                    onClick={() => setModal({ type: 'add', isOpen: true })} 
+--                                    className="flex items-center justify-center gap-[10px] px-[19px] py-[10px] bg-[#103358] text-white rounded-[5px] w-[166px] h-[40px]"
+--                                >
+--                                    <img src="/teacher/add-teacher.svg" alt="Add Teacher" className="w-5 h-5" />
+--                                    <span className="text-[14px] font-bold leading-[20px] ">
+--                                        {t('addTeacher')}
+--                                    </span>
+--                                </button>
+--                                
+--                                {/* Info Icon */}
+--                                <button 
+--                                    onClick={handleHelpClick}
+--                                    className="w-[40px] h-[40px]"
+--                                >
+--                                    <img src="/teacher/info.svg" alt="Add Teacher" className="w-[40px] h-[40px]" />
+--                                </button>
+--                            </div>
+--                        </header>
+--    
+--                        {/* Filter and Options Section */}
+--                        <div className="flex flex-col lg:justify-end sm:flex-row items-start sm:items-center gap-4 mb-6">
+--                            {/* Filter Button */}
+--                            <div className="relative">
+--                                <button 
+--                                    onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+--                                    className="flex items-center justify-center gap-[10px] px-[19px] py-[10px] bg-white border border-[#F2F2F2] rounded-[10px] w-[119.83px] h-[40px]"
+--                                >
+--                                     <img src="/teacher/filter.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+--                                    <span className="text-[14px] font-normal leading-[20px] text-[#103358] font-['Poppins']">
+--                                        Filter
+--                                    </span>
+--                                      
+--                                      <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+--    
+--                                </button>
+--                                
+--                                <FilterDropdown 
+--                                    isOpen={filterDropdownOpen}
+--                                    onClose={() => setFilterDropdownOpen(false)}
+--                                    subjects={pageData.subjects}
+--                                    selectedSubject={selectedSubject}
+--                                    onSubjectChange={setSelectedSubject}
+--                                    onApply={applyFilter}
+--                                />
+--                            </div>
+--    
+--                            {/* Options Button */}
+--                            <div className="relative">
+--                                <button 
+--                                    onClick={() => setOptionsDropdownOpen(!optionsDropdownOpen)}
+--                                    className="flex items-center justify-center gap-[10px] px-[19px] py-[10px] bg-white border border-[#F2F2F2] rounded-[10px] w-[119.83px] h-[40px]"
+--                                >
+--                                    <span className="text-[14px] font-normal leading-[20px] text-[#103358] font-['Poppins']">
+--                                        Options
+--                                    </span>
+--                                                                     <img src="/teacher/arrowdown.svg" alt="Filter icon" className="w-[15px] h-[17px]" />
+--    
+--                                </button>
+--                                
+--                                <OptionsDropdown 
+--                                    isOpen={optionsDropdownOpen}
+--                                    onClose={() => setOptionsDropdownOpen(false)}
+--                                    onResetPassword={handleResetPassword}
+--                                    onExportTeachers={handleExportTeachers}
+--                                />
+--                            </div>
+--                        </div>
+--    
+--                        {/* Table Section */}
+--                        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+--                            <TeachersTable 
+--                                data={filteredTeachers} 
+--                                onDelete={handleDelete}
+--                                onTeacherClick={handleTeacherClick}
+--                                deletedTeacher={deletedTeacher}
+--                                onRestore={handleRestore}
+--                            />
+--                        </div>
+--                    </div>
+--    
+--                    {/* --- Modals --- */}
+--                    <AddTeacherModal 
+--                        isOpen={modal.type === 'add' && modal.isOpen} 
+--                        onClose={() => setModal({ isOpen: false, type: null })}
+--                        onSubmit={handleAddTeacher}
+--                        subjects={pageData.subjects}
+--                        width="848px"
+--                        height="479px"
+--                    />
+--                    <ResetPasswordModal
+--                        isOpen={modal.type === 'reset' && modal.isOpen}
+--                        onClose={() => setModal({ isOpen: false, type: null })}
+--                        teachersCount={pageData.teachers.length}
+--                        width="500px"
+--                        height="300px"
+--                    />
+--                    <TeacherDetailsModal
+--                        isOpen={teacherDetailsModalOpen}
+--                        onClose={() => setTeacherDetailsModalOpen(false)}
+--                        teacher={selectedTeacher}
+--                        onResetPassword={handleTeacherResetPassword}
+--                        onEditSubjects={handleEditSubjects}
+--                    />
+--                </Layout>
+--            </I18nProvider>
+--        );
+--    };
+--    
+--    export default TeachersPage;
+
+------TestModals.js
+--------- Content of TestModals.js ---
+------    'use client';
+------    
+------    import { useState } from 'react';
+------    import { AddTeacherModal, ResetPasswordModal } from './index';
+------    
+------    const TestModals = () => {
+------        const [showAddModal, setShowAddModal] = useState(false);
+------        const [showResetModal, setShowResetModal] = useState(false);
+------        const [submittedData, setSubmittedData] = useState(null);
+------    
+------        const handleAddTeacher = (data) => {
+------            console.log('Teacher data submitted:', data);
+------            setSubmittedData(data);
+------            setShowAddModal(false);
+------        };
+------    
+------        const handleResetPassword = () => {
+------            console.log('Password reset initiated');
+------            setShowResetModal(false);
+------        };
+------    
+------        return (
+------            <div className="p-8">
+------                <h1 className="text-2xl font-bold mb-6">Modal Testing Component</h1>
+------                
+------                <div className="space-y-4">
+------                    <button 
+------                        onClick={() => setShowAddModal(true)}
+------                        className="px-4 py-2 bg-blue-500 text-white rounded"
+------                    >
+------                        Test Add Teacher Modal
+------                    </button>
+------                    
+------                    <button 
+------                        onClick={() => setShowResetModal(true)}
+------                        className="px-4 py-2 bg-red-500 text-white rounded ml-4"
+------                    >
+------                        Test Reset Password Modal
+------                    </button>
+------                </div>
+------    
+------                {submittedData && (
+------                    <div className="mt-6 p-4 bg-green-100 rounded">
+------                        <h3 className="font-bold">Submitted Data:</h3>
+------                        <pre className="mt-2">{JSON.stringify(submittedData, null, 2)}</pre>
+------                    </div>
+------                )}
+------    
+------                <AddTeacherModal 
+------                    isOpen={showAddModal}
+------                    onClose={() => setShowAddModal(false)}
+------                    onSubmit={handleAddTeacher}
+------                    subjects={['Maths', 'English Language', 'Science', 'Geography', 'History']}
+------                    width="848px"
+------                    height="479px"
+------                />
+------    
+------                <ResetPasswordModal
+------                    isOpen={showResetModal}
+------                    onClose={() => setShowResetModal(false)}
+------                    teachersCount={15}
+------                    width="500px"
+------                    height="300px"
+------                />
+------            </div>
+------        );
+------    };
+------    
+------    export default TestModals; 
+------ResetPasswordModal.js
+--------- Content of ResetPasswordModal.js ---
+------    'use client';
+------    
+------    import { useState } from 'react';
+------    import { useTranslation } from 'react-i18next';
+------    
+------    const ResetPasswordModal = ({ isOpen, onClose, teachersCount = 12, selectedTeacher = null }) => {
+------        const { t } = useTranslation();
+------        
+------        // Modal states: 'confirm', 'password-input', 'final-confirm'
+------        const [modalStep, setModalStep] = useState('confirm');
+------        const [passwordData, setPasswordData] = useState({
+------            currentPassword: '',
+------            newPassword: '',
+------            repeatPassword: ''
+------        });
+------    
+------        const handlePasswordChange = (e) => {
+------            const { name, value } = e.target;
+------            setPasswordData(prev => ({ ...prev, [name]: value }));
+------        };
+------    
+------        const handleConfirm = () => {
+------            setModalStep('password-input');
+------        };
+------    
+------        const handlePasswordSubmit = () => {
+------            if (passwordData.newPassword !== passwordData.repeatPassword) {
+------                alert('New passwords do not match');
+------                return;
+------            }
+------            setModalStep('final-confirm');
+------        };
+------    
+------        const handleFinalConfirm = () => {
+------            // Here you would typically make an API call to reset the password
+------            console.log('Password reset completed');
+------            onClose();
+------            setModalStep('confirm');
+------            setPasswordData({ currentPassword: '', newPassword: '', repeatPassword: '' });
+------        };
+------    
+------        const handleCancel = () => {
+------            onClose();
+------            setModalStep('confirm');
+------            setPasswordData({ currentPassword: '', newPassword: '', repeatPassword: '' });
+------        };
+------    
+------        if (!isOpen) return null;
+------    
+------        // First Modal: Confirm Reset for Multiple Teachers
+------        if (modalStep === 'confirm') {
+------            return (
+------                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+------                    {/* Background Overlay */}
+------                    <div
+------                        className="fixed inset-0 bg-[#1033583b]"
+------                        onClick={handleCancel}
+------                    ></div>
+------    
+------                    {/* Modal - Responsive with exact Figma dimensions for larger screens */}
+------                    <div
+------                        className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] w-full max-w-[741px] h-[204px] mx-auto"
+------                    >
+------                        {/* Header */}
+------                        <div className="absolute left-[36px] top-[39px] w-[169px] h-[24px]">
+------                            <h2 className="text-[20px] font-medium text-[#103358] leading-[24px] font-['Poppins']">
+------                                Resets Password
+------                            </h2>
+------                        </div>
+------    
+------                        {/* Divider Line */}
+------                        <div className="absolute left-[36px] top-[70px] w-[calc(100%-72px)] h-[1px] border border-[#D9E7EF]"></div>
+------    
+------                        {/* Content */}
+------                        <div className="absolute left-[36px] top-[84px] w-[calc(100%-72px)] h-[20px]">
+------                            <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                The current list list of {teachersCount} teachers will receive an email with instructions to set a new password.
+------                            </p>
+------                        </div>
+------    
+------                        {/* Buttons - Responsive positioning */}
+------                        <div className="absolute right-[36px] top-[140px] flex flex-row items-start gap-2">
+------                            <button
+------                                onClick={handleCancel}
+------                                className="w-[92px] h-[40px] bg-[rgba(12,104,199,0.06)] border border-[#16375A] rounded-[8px] text-[16px] font-normal text-[#16375A] leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                            >
+------                                Cancel
+------                            </button>
+------                            <button
+------                                onClick={handleConfirm}
+------                                className="w-[164px] h-[40px] bg-[#16375A] text-white rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                            >
+------                                Reset Password
+------                            </button>
+------                        </div>
+------                    </div>
+------                </div>
+------            );
+------        }
+------    
+------        // Second Modal: Password Input Fields
+------        if (modalStep === 'password-input') {
+------            return (
+------                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+------                    {/* Background Overlay */}
+------                    <div
+------                        className="fixed inset-0 bg-[#1033583b]"
+------                        onClick={handleCancel}
+------                    ></div>
+------    
+------                    {/* Modal - Responsive with exact Figma dimensions for larger screens */}
+------                    <div
+------                        className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] w-full max-w-[455px] h-[459px] mx-auto"
+------                    >
+------                        {/* Header */}
+------                        <div className="absolute left-[37px] top-[36px] w-[169px] h-[24px]">
+------                            <h2 className="text-[20px] font-medium text-[#103358] leading-[24px] font-['Poppins']">
+------                                Resets Password
+------                            </h2>
+------                        </div>
+------    
+------                        {/* Divider Line */}
+------                        <div className="absolute left-[39px] top-[70px] w-[calc(100%-78px)] h-[1px] border border-[#D9E7EF]"></div>
+------    
+------                        {/* Password Fields Container */}
+------                        <div className="absolute left-[37px] top-[87px] w-[calc(100%-74px)] h-[269px] flex flex-col gap-4">
+------                            {/* Current Password */}
+------                            <div className="w-full h-[79px] relative">
+------                                <label className="absolute left-0 top-0 w-[128px] h-[20px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                    Current Password
+------                                </label>
+------                                <input
+------                                    type="password"
+------                                    name="currentPassword"
+------                                    value={passwordData.currentPassword}
+------                                    onChange={handlePasswordChange}
+------                                    className="absolute left-0 top-[31px] w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]"
+------                                    placeholder="********"
+------                                />
+------                            </div>
+------    
+------                            {/* New Password */}
+------                            <div className="w-full h-[79px] relative">
+------                                <label className="absolute left-0 top-0 w-[108px] h-[20px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                    New Password
+------                                </label>
+------                                <input
+------                                    type="password"
+------                                    name="newPassword"
+------                                    value={passwordData.newPassword}
+------                                    onChange={handlePasswordChange}
+------                                    className="absolute left-0 top-[31px] w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]"
+------                                    placeholder="********"
+------                                />
+------                            </div>
+------    
+------                            {/* Repeat New Password */}
+------                            <div className="w-full h-[79px] relative">
+------                                <label className="absolute left-0 top-0 w-[164px] h-[20px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                    Repeat New Password
+------                                </label>
+------                                <input
+------                                    type="password"
+------                                    name="repeatPassword"
+------                                    value={passwordData.repeatPassword}
+------                                    onChange={handlePasswordChange}
+------                                    className="absolute left-0 top-[31px] w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]"
+------                                    placeholder="********"
+------                                />
+------                            </div>
+------                        </div>
+------    
+------                        {/* Buttons - Responsive positioning */}
+------                        <div className="absolute right-[37px] top-[393px] flex flex-row items-start gap-2">
+------                            <button
+------                                onClick={handleCancel}
+------                                className="w-[92px] h-[40px] bg-[rgba(12,104,199,0.06)] border border-[#16375A] rounded-[8px] text-[16px] font-normal text-[#16375A] leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                            >
+------                                Cancel
+------                            </button>
+------                            <button
+------                                onClick={handlePasswordSubmit}
+------                                className="w-[73px] h-[40px] bg-[#16375A] text-white rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                            >
+------                                Save
+------                            </button>
+------                        </div>
+------                    </div>
+------                </div>
+------            );
+------        }
+------    
+------        // Third Modal: Final Confirmation
+------        if (modalStep === 'final-confirm') {
+------            const teacherName = selectedTeacher?.name || 'Alya Osman';
+------            const teacherEmail = selectedTeacher?.email || 'alya@5steps.academy';
+------    
+------            return (
+------                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+------                    {/* Background Overlay */}
+------                    <div
+------                        className="fixed inset-0 bg-[#1033583b]"
+------                        onClick={handleCancel}
+------                    ></div>
+------    
+------                    {/* Modal - Responsive with exact Figma dimensions for larger screens */}
+------                    <div
+------                        className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] w-full max-w-[741px] h-[204px] mx-auto"
+------                    >
+------                        {/* Header */}
+------                        <div className="absolute left-[36px] top-[39px] w-[169px] h-[24px]">
+------                            <h2 className="text-[20px] font-medium text-[#103358] leading-[24px] font-['Poppins']">
+------                                Resets Password
+------                            </h2>
+------                        </div>
+------    
+------                        {/* Divider Line */}
+------                        <div className="absolute left-[36px] top-[70px] w-[calc(100%-72px)] h-[1px] border border-[#D9E7EF]"></div>
+------    
+------                        {/* Content */}
+------                        <div className="absolute left-[36px] top-[84px] w-[calc(100%-72px)] h-[40px]">
+------                            <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                Click Continue to reset {teacherName}'s password. An email with instructions for setting a new password will be sent to <strong className="text-[#103358]">{teacherEmail}</strong>.
+------                            </p>
+------                        </div>
+------    
+------                        {/* Buttons - Responsive positioning */}
+------                        <div className="absolute right-[36px] top-[140px] flex flex-row items-start gap-2">
+------                            <button
+------                                onClick={handleCancel}
+------                                className="w-[92px] h-[40px] bg-[rgba(12,104,199,0.06)] border border-[#16375A] rounded-[8px] text-[16px] font-normal text-[#16375A] leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                            >
+------                                Cancel
+------                            </button>
+------                            <button
+------                                onClick={handleFinalConfirm}
+------                                className="w-[109px] h-[40px] bg-[#16375A] text-white rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                            >
+------                                Continue
+------                            </button>
+------                        </div>
+------                    </div>
+------                </div>
+------            );
+------        }
+------    
+------        return null;
+------    };
+------    
+------    export default ResetPasswordModal; 
+------index.js
+--------- Content of index.js ---
+------    export { default as AddTeacherModal } from './AddTeacherModal';
+------    export { default as ResetPasswordModal } from './ResetPasswordModal'; 
+------README.md
+--------- Content of README.md ---
+------    # Modal Components
+------    
+------    This directory contains reusable modal components for the teacher management system.
+------    
+------    ## Components
+------    
+------    ### AddTeacherModal
+------    - **File**: `AddTeacherModal.js`
+------    - **Purpose**: Modal for adding new teachers
+------    - **Props**:
+------      - `isOpen` (boolean): Controls modal visibility
+------      - `onClose` (function): Callback when modal is closed
+------      - `onSubmit` (function): Callback when form is submitted
+------      - `subjects` (array): List of available subjects
+------      - `width` (string): Modal width (default: '848px')
+------      - `height` (string): Modal height (default: '479px')
+------    
+------    ### ResetPasswordModal
+------    - **File**: `ResetPasswordModal.js`
+------    - **Purpose**: Modal for resetting teacher passwords
+------    - **Props**:
+------      - `isOpen` (boolean): Controls modal visibility
+------      - `onClose` (function): Callback when modal is closed
+------      - `teachersCount` (number): Number of teachers affected
+------      - `width` (string): Modal width (default: '500px')
+------      - `height` (string): Modal height (default: '300px')
+------    
+------    ## Features
+------    
+------    ### Styling
+------    - Exact Figma design implementation
+------    - Responsive design
+------    - Consistent color scheme:
+------      - Primary: `#103358`
+------      - Secondary: `#398AC8`
+------      - Button Primary: `#16375A`
+------      - Text: `#374151`
+------    
+------    ### Functionality
+------    - Background overlay with click-to-close
+------    - Form validation
+------    - Checkbox styling with custom colors
+------    - Buttons always positioned on the right side
+------    - Proper focus management
+------    
+------    ## Testing
+------    
+------    ### Manual Testing Steps
+------    
+------    1. **Add Teacher Modal**:
+------       ```bash
+------       # Navigate to teacher page
+------       cd app/teacher
+------       npm run dev
+------       # Open http://localhost:3000/teacher
+------       # Click "Add a Teacher" button
+------       ```
+------    
+------    2. **Reset Password Modal**:
+------       ```bash
+------       # On the teacher page
+------       # Click "Options" dropdown
+------       # Click "Reset Password"
+------       ```
+------    
+------    ### Test Cases
+------    
+------    #### AddTeacherModal
+------    - [ ] Modal opens when "Add a Teacher" button is clicked
+------    - [ ] Background overlay closes modal when clicked
+------    - [ ] Form fields are properly labeled and styled
+------    - [ ] Checkboxes show correct colors when checked/unchecked
+------    - [ ] Submit button is positioned on the right
+------    - [ ] Cancel button closes modal
+------    - [ ] Form submission works correctly
+------    
+------    #### ResetPasswordModal
+------    - [ ] Modal opens when "Reset Password" is clicked
+------    - [ ] Shows correct teacher count
+------    - [ ] Buttons are positioned on the right
+------    - [ ] Cancel button closes modal
+------    - [ ] Reset Password button has correct styling
+------    
+------    ### Visual Testing
+------    - [ ] Modal dimensions match Figma specs
+------    - [ ] Colors match design system
+------    - [ ] Typography is correct (Poppins font)
+------    - [ ] Border radius is 29.98px
+------    - [ ] Shadow matches design
+------    - [ ] Checkbox color is `#16375A` when checked
+------    
+------    ### Responsive Testing
+------    - [ ] Modal works on mobile devices
+------    - [ ] Form fields stack properly on small screens
+------    - [ ] Buttons remain accessible
+------    
+------    ## Usage Example
+------    
+------    ```jsx
+------    import { AddTeacherModal, ResetPasswordModal } from './components/Modal';
+------    
+------    // In your component
+------    const [showAddModal, setShowAddModal] = useState(false);
+------    const [showResetModal, setShowResetModal] = useState(false);
+------    
+------    <AddTeacherModal 
+------        isOpen={showAddModal}
+------        onClose={() => setShowAddModal(false)}
+------        onSubmit={handleAddTeacher}
+------        subjects={['Maths', 'English', 'Science']}
+------        width="848px"
+------        height="479px"
+------    />
+------    
+------    <ResetPasswordModal
+------        isOpen={showResetModal}
+------        onClose={() => setShowResetModal(false)}
+------        teachersCount={12}
+------        width="500px"
+------        height="300px"
+------    />
+------    ``` 
+------AddTeacherModal.js
+--------- Content of AddTeacherModal.js ---
+------    'use client';
+------    
+------    import { useState } from 'react';
+------    import { useTranslation } from 'react-i18next';
+------    
+------    const AddTeacherModal = ({ isOpen, onClose, onSubmit, subjects, width = '848px', height = '479px' }) => {
+------        const { t } = useTranslation();
+------        const [formData, setFormData] = useState({
+------            firstName: '',
+------            lastName: '',
+------            email: '',
+------            userName: '',
+------            subjects: []
+------        });
+------    
+------        const handleChange = (e) => {
+------            const { name, value } = e.target;
+------            setFormData(prev => ({ ...prev, [name]: value }));
+------        };
+------    
+------        const handleSubjectChange = (subject) => {
+------            setFormData(prev => {
+------                const newSubjects = prev.subjects.includes(subject)
+------                    ? prev.subjects.filter(s => s !== subject)
+------                    : [...prev.subjects, subject];
+------                return { ...prev, subjects: newSubjects };
+------            });
+------        };
+------    
+------        const handleSubmit = (e) => {
+------            e.preventDefault();
+------            onSubmit(formData);
+------            onClose();
+------        };
+------    
+------        if (!isOpen) return null;
+------    
+------        return (
+------            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+------                {/* Background Overlay */}
+------                <div
+------                    className="fixed inset-0 bg-[#1033583b] "
+------                    onClick={onClose}
+------                ></div>
+------    
+------                {/* Modal */}
+------                <div
+------                    className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)]"
+------                    style={{ width, height }}
+------                >
+------                    {/* Header */}
+------                    <div className="flex items-center gap-4 p-8 pb-4">
+------                        <img src="/teacher/blueuser.svg" alt="add teacher icon" className="w-5 h-5" />
+------    
+------                        <h2 className="text-[20px] font-medium text-[#103358] leading-[24px]">
+------                            Add a teacher
+------                        </h2>
+------                    </div>
+------    
+------                    {/* Divider Line */}
+------                    <div className="w-full h-[1px] bg-[#D9E7EF] mx-8"></div>
+------    
+------                    <form onSubmit={handleSubmit} className="p-8 pt-4">
+------                        {/* Personal Info Section */}
+------                        <div className="mb-6">
+------                            <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins'] mb-4">
+------                                Personal Info
+------                            </h3>
+------    
+------                            {/* First Row */}
+------                            <div className="flex gap-4 mb-4">
+------                                <div className="flex-1">
+------                                    <label className="block text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] mb-2">
+------                                        First Name
+------                                    </label>
+------                                    <input
+------                                        type="text"
+------                                        name="firstName"
+------                                        value={formData.firstName}
+------                                        onChange={handleChange}
+------                                        className="w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']"
+------                                        placeholder="Alya"
+------                                    />
+------                                </div>
+------                                <div className="flex-1">
+------                                    <label className="block text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] mb-2">
+------                                        Last Name
+------                                    </label>
+------                                    <input
+------                                        type="text"
+------                                        name="lastName"
+------                                        value={formData.lastName}
+------                                        onChange={handleChange}
+------                                        className="w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']"
+------                                        placeholder="Osamn"
+------                                    />
+------                                </div>
+------                            </div>
+------    
+------                            {/* Second Row */}
+------                            <div className="flex gap-4">
+------                                <div className="flex-1">
+------                                    <label className="block text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] mb-2">
+------                                        Email Address
+------                                    </label>
+------                                    <input
+------                                        type="email"
+------                                        name="email"
+------                                        value={formData.email}
+------                                        onChange={handleChange}
+------                                        className="w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']"
+------                                        placeholder="alya@5steps.academy"
+------                                    />
+------                                </div>
+------                                <div className="flex-1">
+------                                    <label className="block text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] mb-2">
+------                                        User Name
+------                                    </label>
+------                                    <input
+------                                        type="text"
+------                                        name="userName"
+------                                        value={formData.userName}
+------                                        onChange={handleChange}
+------                                        className="w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']"
+------                                        placeholder="Alya"
+------                                    />
+------                                </div>
+------                            </div>
+------                        </div>
+------    
+------                        {/* Subjects Section */}
+------                        <div>
+------                            <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins'] mb-4">
+------                                Subjects
+------                            </h3>
+------                            <div className="flex gap-5">
+------                                {subjects.map(subject => (
+------                                    <div key={subject} className="flex items-center gap-3">
+------                                        <div className="relative">
+------                                            <input
+------                                                type="checkbox"
+------                                                id={subject}
+------                                                checked={formData.subjects.includes(subject)}
+------                                                onChange={() => handleSubjectChange(subject)}
+------                                                className="w-[22px] h-[22px] bg-white border border-[#103358] rounded-[3px] checked:bg-[#16375A] checked:border-[#16375A] appearance-none relative cursor-pointer"
+------                                            />
+------                                            {formData.subjects.includes(subject) && (
+------                                                <svg
+------                                                    className="absolute top-0 left-0 w-[22px] h-[22px] pointer-events-none"
+------                                                    viewBox="0 0 22 22"
+------                                                    fill="none"
+------                                                    xmlns="http://www.w3.org/2000/svg"
+------                                                >
+------                                                    <path
+------                                                        d="M6 11L9 14L16 7"
+------                                                        stroke="white"
+------                                                        strokeWidth="2"
+------                                                        strokeLinecap="round"
+------                                                        strokeLinejoin="round"
+------                                                    />
+------                                                </svg>
+------                                            )}
+------                                        </div>
+------                                        <label
+------                                            htmlFor={subject}
+------                                            className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] cursor-pointer"
+------                                        >
+------                                            {subject}
+------                                        </label>
+------                                    </div>
+------                                ))}
+------                            </div>
+------                        </div>
+------    
+------                        {/* Buttons - Always on the right side */}
+------                        <div className="flex justify-end gap-2 mt-8">
+------                            <button
+------                                type="button"
+------                                onClick={onClose}
+------                                className="w-[92px] h-[40px] bg-[rgba(12,104,199,0.06)] border border-[#16375A] rounded-[8px] text-[16px] font-normal text-[#16375A] leading-[24px] font-['Poppins']"
+------                            >
+------                                Cancel
+------                            </button>
+------                            <button
+------                                type="submit"
+------                                className="w-[92px] h-[40px] bg-[#16375A] text-white rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins']"
+------                            >
+------                                Submit
+------                            </button>
+------                        </div>
+------                    </form>
+------                </div>
+------            </div>
+------        );
+------    };
+------    
+------    export default AddTeacherModal; 
+------TeacherDetailsModal.js
+--------- Content of TeacherDetailsModal.js ---
+------    'use client';
+------    
+------    import { useState } from 'react';
+------    import { useTranslation } from 'react-i18next';
+------    
+------    const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEditSubjects }) => {
+------        const { t } = useTranslation();
+------        const [showStudentList, setShowStudentList] = useState(false);
+------        const [showSubjectEdit, setShowSubjectEdit] = useState(false);
+------        const [selectedSubjects, setSelectedSubjects] = useState(teacher?.subjects || ['Maths']);
+------    
+------        const handleSubjectChange = (subject) => {
+------            setSelectedSubjects(prev => {
+------                const newSubjects = prev.includes(subject)
+------                    ? prev.filter(s => s !== subject)
+------                    : [...prev, subject];
+------                return newSubjects;
+------            });
+------        };
+------    
+------        const handleSubjectSubmit = () => {
+------            onEditSubjects(selectedSubjects);
+------            setShowSubjectEdit(false);
+------        };
+------    
+------        if (!isOpen) return null;
+------    
+------        return (
+------            <>
+------                {/* Main Teacher Details Modal */}
+------                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+------                    {/* Background Overlay */}
+------                    <div
+------                        className="fixed inset-0 bg-[#1033583b]"
+------                        onClick={onClose}
+------                    ></div>
+------    
+------                    {/* Modal - Responsive with exact Figma dimensions for larger screens */}
+------                    <div
+------                        className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] w-full max-w-[1099px] h-[602px] mx-auto"
+------                    >
+------                        {/* Header Row */}
+------                        <div className="absolute left-[36px] top-[29px] flex items-center gap-2">
+------                            <h2 className="text-[20px] font-medium text-[#103358] leading-[24px] font-['Poppins']">
+------                                {teacher?.name || 'Alya , Osman'}
+------                            </h2>
+------                        </div>
+------    
+------                        {/* Reset Password Link */}
+------                        <div className="absolute left-[179px] top-[32px] flex items-center gap-2 cursor-pointer" onClick={onResetPassword}>
+------                            <span className="text-[12px] font-medium text-[#398AC8] leading-[24px] font-['Poppins']">
+------                                Reset Password
+------                            </span>
+------                            <img src="/teacher/resetpassword.svg" alt="reset password" className="w-[10px] h-[13px]" />
+------                        </div>
+------    
+------                        {/* Close Button - Exact Figma positioning */}
+------                        <div className="absolute right-[36px] top-[27px] cursor-pointer" onClick={onClose}>
+------                            <img src="/teacher/close.svg" alt="close" className="w-[19.55px] h-[19.55px]" />
+------                        </div>
+------    
+------                        {/* Divider Lines */}
+------                        <div className="absolute left-[36px] top-[70px] w-[calc(100%-72px)] h-[1px] border border-[#D9E7EF]"></div>
+------                        <div className="absolute left-[36px] top-[205px] w-[calc(100%-72px)] h-[1px] border border-[#D9E7EF]"></div>
+------                        <div className="absolute left-[36px] top-[305px] w-[calc(100%-72px)] h-[1px] border border-[#D9E7EF]"></div>
+------                        <div className="absolute left-[36px] top-[445px] w-[calc(100%-72px)] h-[1px] border border-[#D9E7EF]"></div>
+------    
+------                        {/* Content Container */}
+------                        <div className="absolute left-[36px] top-[90px] w-[calc(100%-72px)] h-[459px] flex flex-col gap-[41px]">
+------    
+------                            {/* Personal Info Section */}
+------                            <div className="w-full h-[94px]">
+------                                <div className="flex items-center gap-2 mb-4">
+------                                    <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins']">
+------                                        Personal Info
+------                                    </h3>
+------                                    <img src="/teacher/edite.svg" alt="edit" className="w-[18px] h-[18px]" />
+------                                </div>
+------                                <div className="grid grid-cols-3 gap-4">
+------                                    <div>
+------                                        <p className="text-[14px] font-normal text-[#ABABAB] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] mb-1">
+------                                            Name
+------                                        </p>
+------                                        <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                            {teacher?.fullName || 'Alya Osaman'}
+------                                        </p>
+------                                    </div>
+------                                    <div>
+------                                        <p className="text-[14px] font-normal text-[#ABABAB] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] mb-1">
+------                                            Email Address
+------                                        </p>
+------                                        <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                            {teacher?.email || 'alya@5steps.academy'}
+------                                        </p>
+------                                    </div>
+------                                    <div>
+------                                        <p className="text-[14px] font-normal text-[#ABABAB] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] mb-1">
+------                                            Username
+------                                        </p>
+------                                        <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                            {teacher?.username || 'alya'}
+------                                        </p>
+------                                    </div>
+------                                </div>
+------                            </div>
+------    
+------                            {/* Subjects Section */}
+------                            <div className="w-full h-[94px]">
+------                                <div className="flex items-center gap-2 mb-4">
+------                                    <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins']">
+------                                        Subjects
+------                                    </h3>
+------                                    <img src="/teacher/edite.svg" alt="edit" className="w-[18px] h-[18px] cursor-pointer" onClick={() => setShowSubjectEdit(true)} />
+------                                </div>
+------                                <div className="flex items-center gap-4">
+------                                    <img src="/teacher/calculator.svg" alt="calculator" className="w-[18px] h-[18px]" />
+------                                    <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                        {teacher?.subjects?.join(', ') || 'Maths'}
+------                                    </span>
+------                                </div>
+------                            </div>
+------    
+------                            {/* Students Section - Exact Figma specifications */}
+------                            <div className="w-full h-[90px]">
+------                                <div className="flex items-center gap-2 mb-4">
+------                                    <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins']">
+------                                        Students
+------                                    </h3>
+------                                    <img src="/teacher/bluestudent.svg" alt="students" className="w-[13px] h-[14px]" />
+------                                </div>
+------                                <div className="flex items-center gap-4 mb-2">
+------                                    <img src="/teacher/calculator.svg" alt="calculator" className="w-[18px] h-[18px]" />
+------                                    <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                        Class
+------                                    </span>
+------                                </div>
+------                                <div className="flex items-center justify-between">
+------                                    <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                        Not enrolled in classes
+------                                    </span>
+------                                    <div className="flex items-center gap-4">
+------                                        <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                            {teacher?.studentCount || '36'} Students
+------                                        </span>
+------                                        <button 
+------                                            onClick={() => setShowStudentList(true)}
+------                                            className="text-[12px] font-normal text-[#2F80ED] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] cursor-pointer"
+------                                        >
+------                                            View All
+------                                        </button>
+------                                    </div>
+------                                </div>
+------                            </div>
+------    
+------                            {/* Account History Section */}
+------                            <div className="w-full h-[94px]">
+------                                <div className="flex items-center gap-2 mb-4">
+------                                    <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins']">
+------                                        Account History
+------                                    </h3>
+------                                    <img src="/teacher/accounthistory.svg" alt="account history" className="w-[18px] h-[18px]" />
+------                                </div>
+------                                <div className="grid grid-cols-2 gap-4">
+------                                    <div>
+------                                        <p className="text-[14px] font-normal text-[#ABABAB] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] mb-1">
+------                                            Account Created
+------                                        </p>
+------                                        <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                            {teacher?.accountCreated || '20/12/22'}
+------                                        </p>
+------                                    </div>
+------                                    <div>
+------                                        <p className="text-[14px] font-normal text-[#ABABAB] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] mb-1">
+------                                            Last Updated
+------                                        </p>
+------                                        <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+------                                            {teacher?.lastUpdated || '26/12/22'}
+------                                        </p>
+------                                    </div>
+------                                </div>
+------                            </div>
+------                        </div>
+------                    </div>
+------                </div>
+------    
+------                {/* Subject Edit Modal */}
+------                {showSubjectEdit && (
+------                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+------                        <div className="fixed inset-0 bg-[#1033583b]" onClick={() => setShowSubjectEdit(false)}></div>
+------                        
+------                        <div className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] w-full max-w-[848px] h-[240px] mx-auto">
+------                            {/* Header */}
+------                            <div className="absolute left-[36px] top-[29px] flex items-center gap-2">
+------                                <img src="/teacher/blueuser.svg" alt="user" className="w-[17px] h-[19.43px]" />
+------                                <h2 className="text-[20px] font-medium text-[#103358] leading-[24px] font-['Poppins']">
+------                                    {teacher?.name || 'Osman , Alya'}
+------                                </h2>
+------                            </div>
+------    
+------                            {/* Close Button */}
+------                            <div className="absolute right-[36px] top-[27px] cursor-pointer" onClick={() => setShowSubjectEdit(false)}>
+------                                <img src="/teacher/close.svg" alt="close" className="w-[19.55px] h-[19.55px]" />
+------                            </div>
+------    
+------                            {/* Divider */}
+------                            <div className="absolute left-[36px] top-[70px] w-[calc(100%-72px)] h-[1px] border border-[#D9E7EF]"></div>
+------    
+------                            {/* Content */}
+------                            <div className="absolute left-[36px] top-[84px] w-[calc(100%-72px)]">
+------                                <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins'] mb-4">
+------                                    Subjects
+------                                </h3>
+------                                <div className="flex gap-5">
+------                                    {['Maths', 'English Language'].map(subject => (
+------                                        <div key={subject} className="flex items-center gap-3">
+------                                            <div className="relative">
+------                                                <input
+------                                                    type="checkbox"
+------                                                    id={subject}
+------                                                    checked={selectedSubjects.includes(subject)}
+------                                                    onChange={() => handleSubjectChange(subject)}
+------                                                    className="w-[22px] h-[22px] bg-white border border-[#103358] rounded-[3px] checked:bg-[#103358] checked:border-[#103358] appearance-none relative cursor-pointer"
+------                                                />
+------                                                {selectedSubjects.includes(subject) && (
+------                                                    <svg
+------                                                        className="absolute top-0 left-0 w-[22px] h-[22px] pointer-events-none"
+------                                                        viewBox="0 0 22 22"
+------                                                        fill="none"
+------                                                        xmlns="http://www.w3.org/2000/svg"
+------                                                    >
+------                                                        <path
+------                                                            d="M6 11L9 14L16 7"
+------                                                            stroke="white"
+------                                                            strokeWidth="2"
+------                                                            strokeLinecap="round"
+------                                                            strokeLinejoin="round"
+------                                                        />
+------                                                    </svg>
+------                                                )}
+------                                            </div>
+------                                            <label
+------                                                htmlFor={subject}
+------                                                className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] cursor-pointer"
+------                                            >
+------                                                {subject}
+------                                            </label>
+------                                        </div>
+------                                    ))}
+------                                </div>
+------                            </div>
+------    
+------                            {/* Buttons */}
+------                            <div className="absolute right-[36px] top-[169px] flex gap-2">
+------                                <button
+------                                    onClick={() => setShowSubjectEdit(false)}
+------                                    className="w-[92px] h-[40px] bg-[rgba(12,104,199,0.06)] border border-[#16375A] rounded-[8px] text-[16px] font-normal text-[#16375A] leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                                >
+------                                    Cancel
+------                                </button>
+------                                <button
+------                                    onClick={handleSubjectSubmit}
+------                                    className="w-[92px] h-[40px] bg-[#16375A] text-white rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                                >
+------                                    Submit
+------                                </button>
+------                            </div>
+------                        </div>
+------                    </div>
+------                )}
+------    
+------                {/* Student List Modal */}
+------                {showStudentList && (
+------                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+------                        <div className="fixed inset-0 bg-[#1033583b]" onClick={() => setShowStudentList(false)}></div>
+------                        
+------                        <div className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] w-full max-w-[1200px] h-[600px] md:h-[700px] lg:h-[800px] mx-auto flex flex-col">
+------                            {/* Header */}
+------                            <div className="flex-shrink-0 p-8 pb-4">
+------                                <div className="flex items-center justify-between mb-4">
+------                                    <div>
+------                                        <h2 className="text-[20px] md:text-[24px] font-medium text-[#103358] leading-[24px] font-['Poppins'] mb-2">
+------                                            {teacher?.name || 'Alya , Osman'}'s Roster
+------                                        </h2>
+------                                        <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']">
+------                                            {teacher?.name || 'Alya , Osman'}'s Roster contains the following {teacher?.studentCount || '36'} students.
+------                                        </p>
+------                                    </div>
+------                                    <button 
+------                                        onClick={() => setShowStudentList(false)}
+------                                        className="flex-shrink-0"
+------                                    >
+------                                        <img src="/teacher/close.svg" alt="close" className="w-[19.55px] h-[19.55px]" />
+------                                    </button>
+------                                </div>
+------                            </div>
+------    
+------                            {/* Table Container */}
+------                            <div className="flex-1 px-8 pb-8 overflow-hidden">
+------                                {/* Table Header */}
+------                                <div className="bg-[#16375A] rounded-t-[8px] flex items-center px-4 md:px-8 py-4 mb-0">
+------                                    <div className="grid grid-cols-4 w-full gap-4 md:gap-8">
+------                                        <span className="text-[14px] md:text-[16px] font-medium text-white leading-[24px] font-['Poppins']">
+------                                            Student Name
+------                                        </span>
+------                                        <span className="text-[14px] md:text-[16px] font-medium text-white leading-[24px] font-['Poppins']">
+------                                            Student ID
+------                                        </span>
+------                                        <span className="text-[14px] md:text-[16px] font-medium text-white leading-[24px] font-['Poppins']">
+------                                            Year
+------                                        </span>
+------                                        <span className="text-[14px] md:text-[16px] font-medium text-white leading-[24px] font-['Poppins']">
+------                                            User Name
+------                                        </span>
+------                                    </div>
+------                                </div>
+------    
+------                                {/* Table Content with Scroll */}
+------                                <div className="bg-white border border-[#E0E0E0] rounded-b-[8px] overflow-hidden">
+------                                    <div className="max-h-[300px] md:max-h-[400px] lg:max-h-[500px] overflow-y-auto">
+------                                        {Array.from({ length: 36 }, (_, i) => ({
+------                                            name: `Student ${i + 1}`,
+------                                            id: `student${i + 1}@example.com`,
+------                                            year: `P${i + 1}`,
+------                                            username: 'glat@5stpes'
+------                                        })).map((student, index) => (
+------                                            <div key={index} className="flex items-center px-4 md:px-8 py-3 border-b border-[#E0E0E0] last:border-b-0 hover:bg-gray-50">
+------                                                <div className="grid grid-cols-4 w-full gap-4 md:gap-8">
+------                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+------                                                        {student.name}
+------                                                    </span>
+------                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+------                                                        {student.id}
+------                                                    </span>
+------                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+------                                                        {student.year}
+------                                                    </span>
+------                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+------                                                        {student.username}
+------                                                    </span>
+------                                                </div>
+------                                            </div>
+------                                        ))}
+------                                    </div>
+------                                </div>
+------                            </div>
+------    
+------                            {/* Footer with Close Button */}
+------                            <div className="flex-shrink-0 p-8 pt-4 flex justify-end">
+------                                <button
+------                                    onClick={() => setShowStudentList(false)}
+------                                    className="w-[109px] h-[40px] bg-[#16375A] text-white rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+------                                >
+------                                    Close
+------                                </button>
+------                            </div>
+------                        </div>
+------                    </div>
+------                )}
+------            </>
+------        );
+------    };
+------    
+------    export default TeacherDetailsModal; 
+--teacher_structure.txt
+----- Content of teacher_structure.txt ---
+

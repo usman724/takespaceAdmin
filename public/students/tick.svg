@@ -1,0 +1,14 @@
+ <svg
+                                                className="absolute top-0 left-0 w-[22px] h-[22px] pointer-events-none"
+                                                viewBox="0 0 22 22"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    d="M6 11L9 14L16 7"
+                                                    stroke="white"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            </svg>

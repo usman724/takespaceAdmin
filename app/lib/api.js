@@ -71,6 +71,254 @@ const mockData = {
     ],
     subjects: ['Maths', 'English Language', 'Science', 'Geography', 'History']
   },
+
+  // Students page data
+  studentsPage: {
+    students: [
+      {
+        id: 1,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 2,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 3,
+        class: 'A',
+        firstName: 'Stylianos',
+        lastName: 'Angelakis',
+        userName: 'StyAngel',
+        email: 'stylianos@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Doctor Alex',
+        password: 'Password',
+        status: 'deactivated',
+        aptitudeLevel: '3',
+        accountCreated: '15/11/22',
+        lastUpdated: '20/12/22'
+      },
+      {
+        id: 4,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 5,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 6,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 7,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 8,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 9,
+        class: 'A',
+        firstName: 'Alexandra',
+        lastName: 'Bander',
+        userName: 'Bloom',
+        email: 'abddf@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E6'],
+        teachers: 'Alexandra, Ha...',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '20/12/22',
+        lastUpdated: '26/12/22'
+      },
+      {
+        id: 10,
+        class: 'B',
+        firstName: 'Michael',
+        lastName: 'Johnson',
+        userName: 'MikeJ',
+        email: 'michael.j@gmail.com',
+        grade: '5',
+        subjects: ['M5', 'S5'],
+        teachers: 'Doctor Alex, Jane Cooper',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '1',
+        accountCreated: '10/11/22',
+        lastUpdated: '25/12/22'
+      },
+      {
+        id: 11,
+        class: 'B',
+        firstName: 'Sarah',
+        lastName: 'Williams',
+        userName: 'SarahW',
+        email: 'sarah.w@gmail.com',
+        grade: '3',
+        subjects: ['E3', 'G3'],
+        teachers: 'Annette Black',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '05/12/22',
+        lastUpdated: '28/12/22'
+      },
+      {
+        id: 12,
+        class: 'C',
+        firstName: 'David',
+        lastName: 'Brown',
+        userName: 'DavidB',
+        email: 'david.b@gmail.com',
+        grade: '6',
+        subjects: ['M6', 'S6', 'E6'],
+        teachers: 'Kathryn Murphy, Jerome Bell',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '1',
+        accountCreated: '18/10/22',
+        lastUpdated: '30/12/22'
+      },
+      {
+        id: 13,
+        class: 'A',
+        firstName: 'Emma',
+        lastName: 'Davis',
+        userName: 'EmmaD',
+        email: 'emma.d@gmail.com',
+        grade: '4',
+        subjects: ['M4', 'E4'],
+        teachers: 'Savannah Nguyen',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '3',
+        accountCreated: '22/11/22',
+        lastUpdated: '29/12/22'
+      },
+      {
+        id: 14,
+        class: 'B',
+        firstName: 'James',
+        lastName: 'Wilson',
+        userName: 'JamesW',
+        email: 'james.w@gmail.com',
+        grade: '5',
+        subjects: ['M5', 'S5', 'G5'],
+        teachers: 'Jane Cooper, Doctor Alex',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '2',
+        accountCreated: '08/12/22',
+        lastUpdated: '31/12/22'
+      },
+      {
+        id: 15,
+        class: 'C',
+        firstName: 'Olivia',
+        lastName: 'Miller',
+        userName: 'OliviaM',
+        email: 'olivia.m@gmail.com',
+        grade: '3',
+        subjects: ['E3', 'M3'],
+        teachers: 'Jerome Bell',
+        password: 'Password',
+        status: 'active',
+        aptitudeLevel: '1',
+        accountCreated: '12/11/22',
+        lastUpdated: '27/12/22'
+      }
+    ],
+    teachers: ['Doctor Alex', 'Annette Black', 'Kathryn Murphy', 'Jerome Bell', 'Savannah Nguyen', 'Jane Cooper'],
+    subjects: ['Maths', 'English Language', 'Science', 'Geography', 'History']
+  },
   
   // Teacher Engagement data
   teacherEngagement: {
@@ -248,9 +496,11 @@ const getTeacherAnalyticsPageData = async () => {
     return { ...analyticsData, ...dashboardData };
 };
 
+// Teachers page data
 const getTeachersPageData = async () => fetcher(mockData.teachersPage);
 
-
+// Students page data
+const getStudentsPageData = async () => fetcher(mockData.studentsPage);
 
 export const api = {
   getLearningData,
@@ -261,6 +511,7 @@ export const api = {
   getDashboardData,
   getTeacherAnalyticsPageData, // Use this for the main page
   getTeachersPageData,
+  getStudentsPageData, // New function for students page
 };
 
 export default api;
