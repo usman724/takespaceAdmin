@@ -134,7 +134,7 @@ const OptionsDropdown = ({ isOpen, onClose, onResetPassword, onExportTeachers })
 };
 
 // React Table Component with Figma styling
-const TeachersTable = ({ data, onDelete, onTeacherClick }) => {
+const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onRestore }) => {
   const { t } = useTranslation();
 
   const columns = useMemo(() => [
@@ -168,21 +168,28 @@ const TeachersTable = ({ data, onDelete, onTeacherClick }) => {
     {
       Header: '',
       accessor: 'actions',
-      Cell: ({ row }) => (
-        <button 
-          onClick={(e) => { 
-            e.stopPropagation(); 
-            onDelete(row.original); 
-          }} 
-          className="text-red-500 hover:text-red-700"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-        </button>
-      )
+      Cell: ({ row }) => {
+        const teacher = row.original;
+        const isDeleted = deletedTeacher && deletedTeacher.id === teacher.id;
+        
+        return (
+          <button 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (!isDeleted) {
+                onDelete(teacher); 
+              }
+            }} 
+            className={`${isDeleted ? 'hidden' : 'text-red-500 hover:text-red-700'}`}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+          </button>
+        );
+      }
     }
-  ], [t, onDelete]);
+  ], [t, onDelete, deletedTeacher]);
 
   const {
     getTableProps,
@@ -230,17 +237,41 @@ const TeachersTable = ({ data, onDelete, onTeacherClick }) => {
         <tbody {...getTableBodyProps()}>
           {page.map(row => {
             prepareRow(row);
+            const teacher = row.original;
+            const isDeleted = deletedTeacher && deletedTeacher.id === teacher.id;
+            
             return (
               <tr 
                 {...row.getRowProps()} 
-                className="border-b border-[#E0E0E0] bg-white hover:bg-gray-50 cursor-pointer"
-                onClick={() => onTeacherClick(row.original)}
+                className={`border-b border-[#E0E0E0] ${isDeleted ? 'bg-[#398AC8] text-white' : 'bg-white hover:bg-gray-50 cursor-pointer'}`}
+                onClick={!isDeleted ? () => onTeacherClick(teacher) : undefined}
               >
-                {row.cells.map(cell => (
-                  <td {...cell.getCellProps()} className="px-6 py-4">
-                    {cell.render('Cell')}
+                {isDeleted ? (
+                  // Show restore message when teacher is deleted
+                  <td colSpan={4} className="px-6 py-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white text-[14px] leading-[24px] font-normal">
+                        {deletedTeacher.name}'s account has been removed
+                      </span>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRestore();
+                        }} 
+                        className="bg-white text-[#398AC8] px-4 py-2 rounded font-medium text-[14px] leading-[24px] font-normal"
+                      >
+                        Restore
+                      </button>
+                    </div>
                   </td>
-                ))}
+                ) : (
+                  // Show normal teacher data
+                  row.cells.map(cell => (
+                    <td {...cell.getCellProps()} className="px-6 py-4">
+                      {cell.render('Cell')}
+                    </td>
+                  ))
+                )}
               </tr>
             );
           })}
@@ -250,42 +281,22 @@ const TeachersTable = ({ data, onDelete, onTeacherClick }) => {
       {/* Pagination with Figma styling */}
       {pageCount > 1 && (
         <div className="flex justify-end items-center gap-2 py-4">
-          <button 
+          <button
             onClick={() => previousPage()}
             disabled={!canPreviousPage}
-            className="px-3 py-1 text-[#103358] disabled:opacity-50 hover:bg-gray-100 rounded"
+            className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
           >
-            &lt;
+            Previous
           </button>
-          
-          {pageOptions.map((page, i) => {
-            // Show first 5 pages, then ellipsis, then last page
-            if (i < 5 || i === pageCount - 1) {
-              return (
-                <button
-                  key={page}
-                  onClick={() => gotoPage(page)}
-                  className={`w-8 h-8 flex items-center justify-center text-[14px] font-normal leading-[20px] font-['Poppins'] ${
-                    pageIndex === page 
-                      ? 'bg-white border border-[#103358] rounded-[4px] text-[#103358]' 
-                      : 'text-[#103358] hover:bg-gray-100 rounded'
-                  }`}
-                >
-                  {page + 1}
-                </button>
-              );
-            } else if (i === 5 && pageCount > 6) {
-              return <span key="ellipsis" className="px-2 text-[#103358]">...</span>;
-            }
-            return null;
-          })}
-          
-          <button 
+          <span className="text-sm">
+            Page {pageIndex + 1} of {pageOptions.length}
+          </span>
+          <button
             onClick={() => nextPage()}
             disabled={!canNextPage}
-            className="px-3 py-1 text-[#103358] disabled:opacity-50 hover:bg-gray-100 rounded"
+            className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
           >
-            &gt;
+            Next
           </button>
         </div>
       )}
@@ -348,21 +359,36 @@ const TeachersPage = () => {
     };
 
     const handleDelete = (teacherToDelete) => {
-        setDeletedTeacher(teacherToDelete);
+        // Mark the teacher as removed instead of filtering out
+        const updatedTeacher = { ...teacherToDelete, status: 'removed' };
+        setDeletedTeacher(updatedTeacher);
+        
+        // Update the teacher status in both arrays
         setPageData(prev => ({
             ...prev,
-            teachers: prev.teachers.filter(t => t.id !== teacherToDelete.id)
+            teachers: prev.teachers.map(t => 
+                t.id === teacherToDelete.id ? updatedTeacher : t
+            )
         }));
-        setFilteredTeachers(prev => prev.filter(t => t.id !== teacherToDelete.id));
+        setFilteredTeachers(prev => prev.map(t => 
+            t.id === teacherToDelete.id ? updatedTeacher : t
+        ));
     };
 
     const handleRestore = () => {
         if (deletedTeacher) {
+            // Restore the teacher by changing status back to active
+            const restoredTeacher = { ...deletedTeacher, status: 'active' };
+            
             setPageData(prev => ({
                 ...prev,
-                teachers: [...prev.teachers, deletedTeacher].sort((a, b) => a.id - b.id)
+                teachers: prev.teachers.map(t => 
+                    t.id === deletedTeacher.id ? restoredTeacher : t
+                )
             }));
-            setFilteredTeachers(prev => [...prev, deletedTeacher].sort((a, b) => a.id - b.id));
+            setFilteredTeachers(prev => prev.map(t => 
+                t.id === deletedTeacher.id ? restoredTeacher : t
+            ));
             setDeletedTeacher(null);
         }
     };
@@ -531,16 +557,12 @@ const TeachersPage = () => {
                     {/* Table Section */}
                     <div className="bg-white rounded-xl shadow-md overflow-hidden">
                         <TeachersTable 
-                            data={activeTeachers} 
+                            data={filteredTeachers} 
                             onDelete={handleDelete}
                             onTeacherClick={handleTeacherClick}
+                            deletedTeacher={deletedTeacher}
+                            onRestore={handleRestore}
                         />
-                        {removedTeacher && (
-                            <div className="bg-[#398AC8] text-white flex justify-between items-center p-4">
-                                <span>{removedTeacher.name}'s account has been removed</span>
-                                <button onClick={handleRestore} className="bg-white text-[#398AC8] px-4 py-2 rounded font-medium">Restore</button>
-                            </div>
-                        )}
                     </div>
                 </div>
 
