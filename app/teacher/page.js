@@ -7,6 +7,7 @@ import { useTable, usePagination, useFilters, useSortBy } from 'react-table';
 import Layout from '../components/layout/Layout';
 import I18nProvider from '../components/providers/I18nProvider';
 import { AddTeacherModal, ResetPasswordModal } from './components/Modal';
+import TeacherDetailsModal from './components/Modal/TeacherDetailsModal';
 import { api } from '../lib/api';
 import '../lib/i18n';
 
@@ -133,7 +134,7 @@ const OptionsDropdown = ({ isOpen, onClose, onResetPassword, onExportTeachers })
 };
 
 // React Table Component with Figma styling
-const TeachersTable = ({ data, onDelete }) => {
+const TeachersTable = ({ data, onDelete, onTeacherClick }) => {
   const { t } = useTranslation();
 
   const columns = useMemo(() => [
@@ -233,6 +234,7 @@ const TeachersTable = ({ data, onDelete }) => {
               <tr 
                 {...row.getRowProps()} 
                 className="border-b border-[#E0E0E0] bg-white hover:bg-gray-50 cursor-pointer"
+                onClick={() => onTeacherClick(row.original)}
               >
                 {row.cells.map(cell => (
                   <td {...cell.getCellProps()} className="px-6 py-4">
@@ -306,6 +308,8 @@ const TeachersPage = () => {
     const [optionsDropdownOpen, setOptionsDropdownOpen] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState('');
     const [filteredTeachers, setFilteredTeachers] = useState([]);
+    const [selectedTeacher, setSelectedTeacher] = useState(null);
+    const [teacherDetailsModalOpen, setTeacherDetailsModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -406,6 +410,34 @@ const TeachersPage = () => {
         router.push('/help');
     };
 
+    // Handle teacher click to open details modal
+    const handleTeacherClick = (teacher) => {
+        setSelectedTeacher(teacher);
+        setTeacherDetailsModalOpen(true);
+    };
+
+    // Handle reset password from teacher details modal
+    const handleTeacherResetPassword = () => {
+        setTeacherDetailsModalOpen(false);
+        setModal({ type: 'reset', isOpen: true });
+    };
+
+    // Handle edit subjects from teacher details modal
+    const handleEditSubjects = (newSubjects) => {
+        if (selectedTeacher) {
+            const updatedTeacher = { ...selectedTeacher, subjects: newSubjects };
+            setPageData(prev => ({
+                ...prev,
+                teachers: prev.teachers.map(t => 
+                    t.id === selectedTeacher.id ? updatedTeacher : t
+                )
+            }));
+            setFilteredTeachers(prev => prev.map(t => 
+                t.id === selectedTeacher.id ? updatedTeacher : t
+            ));
+        }
+    };
+
     const activeTeachers = getActiveTeachers();
     const removedTeacher = getRemovedTeacher();
 
@@ -498,7 +530,11 @@ const TeachersPage = () => {
 
                     {/* Table Section */}
                     <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                        <TeachersTable data={activeTeachers} onDelete={handleDelete} />
+                        <TeachersTable 
+                            data={activeTeachers} 
+                            onDelete={handleDelete}
+                            onTeacherClick={handleTeacherClick}
+                        />
                         {removedTeacher && (
                             <div className="bg-[#398AC8] text-white flex justify-between items-center p-4">
                                 <span>{removedTeacher.name}'s account has been removed</span>
@@ -523,6 +559,13 @@ const TeachersPage = () => {
                     teachersCount={pageData.teachers.length}
                     width="500px"
                     height="300px"
+                />
+                <TeacherDetailsModal
+                    isOpen={teacherDetailsModalOpen}
+                    onClose={() => setTeacherDetailsModalOpen(false)}
+                    teacher={selectedTeacher}
+                    onResetPassword={handleTeacherResetPassword}
+                    onEditSubjects={handleEditSubjects}
                 />
             </Layout>
         </I18nProvider>
