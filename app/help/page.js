@@ -59,7 +59,7 @@ const HelpPage = () => {
             <Layout>
                 <div className="min-h-screen bg-white">
                     {/* Header Section with Background Image */}
-                    <div className="relative h-64 bg-gradient-to-r from-[#16375A] to-[#2F71A8] overflow-hidden">
+                    <div className="relative h-64  overflow-hidden">
                         <div className="absolute inset-0">
                             <Image
                                 src="/help/topheader.svg"
