@@ -141,7 +141,7 @@ const ReviewModal = ({ isOpen, onClose }) => {
         >
           {/* REVIEW */}
           <div style={{ width: 91, height: 91, position: 'relative', textAlign: 'center' }}>
-            <img src="/roster/review1.svg" alt="Review" width={91} height={91} />
+            <img  className='mt-[23px]' src="/roster/review1.svg" alt="Review" width={91} height={91} />
             <div
               className="font-['Poppins']"
               style={{
@@ -183,7 +183,7 @@ const ReviewModal = ({ isOpen, onClose }) => {
 
           {/* UPLOAD */}
           <div style={{ width: 91, height: 91, position: 'relative', textAlign: 'center' }}>
-            <img src="/roster/review3.svg" alt="Upload" width={91} height={91} />
+            <img className='mt-[23px]' src="/roster/review3.svg" alt="Upload" width={91} height={91} />
             <div
               className="font-['Poppins']"
               style={{
