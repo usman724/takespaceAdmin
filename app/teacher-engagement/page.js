@@ -15,6 +15,7 @@ const TeacherEngagementPage = () => {
   const [engagementData, setEngagementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('teacherEngagement');
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [filters, setFilters] = useState({
     grade: 'All Grade',
     subject: 'All subjects', 
@@ -51,6 +52,14 @@ const TeacherEngagementPage = () => {
     fetchData();
   }, []);
 
+  // Track screen size for responsive tweaks (mobile-first)
+  useEffect(() => {
+    const handleResize = () => setIsSmallScreen(window.innerWidth < 640);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
       ...prev,
@@ -65,11 +74,45 @@ const TeacherEngagementPage = () => {
     console.log('Tab changed to:', tabKey);
   };
 
-const EngagementBar = ({ teacher, isSummary = false }) => {
+// Scalable chevron overlay for full-width bars. The SVG scales to the bar size
+// and keeps chevrons proportionally sized and spaced. On small screens the
+// chevrons remain slim due to non-scaling strokes.
+const FullWidthChevronOverlay = ({ chevrons = 3 }) => {
+  const apexPositions = chevrons === 2 ? [33.33, 66.66] : [25, 50, 75];
+  const chevronWidth = 3.5; // in viewBox percentage units (smaller = slimmer)
+  return (
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      viewBox="0 0 100 44"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {apexPositions.map((apex, idx) => {
+        const base = apex - chevronWidth;
+        return (
+          <polyline
+            key={idx}
+            points={`${base},0 ${apex},22 ${base},44`}
+            stroke="white"
+            strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        );
+      })}
+    </svg>
+  );
+};
+
+const EngagementBar = ({ teacher, isSummary = false, isSmallScreen = false }) => {
   const percentage = isSummary ? teacher.percentage : teacher.engagement;
   const color = teacher.color;
   const isFullEngagement = percentage === 100;
-  
+  const barHeightCss = isSummary ? 'clamp(32px, 6vw, 50px)' : 'clamp(26px, 4.5vw, 44px)';
+  const arrowHeadWidthPx = isSmallScreen ? 14 : 18; // slimmer arrowhead on mobile
+
   return (
     <div className="mb-6">
       {!isSummary && (
@@ -77,7 +120,7 @@ const EngagementBar = ({ teacher, isSummary = false }) => {
           className="mb-3"
           style={{
             fontFamily: 'Poppins, sans-serif',
-            fontSize: '18px',
+            fontSize: 'clamp(14px, 2.6vw, 18px)',
             fontWeight: 600,
             color: '#103358'
           }}
@@ -89,8 +132,8 @@ const EngagementBar = ({ teacher, isSummary = false }) => {
         <div
           className="relative overflow-hidden"
           style={{
-            width: isSummary ? '100%' : '100%',
-            height: isSummary ? '50px' : '44px',
+            width: '100%',
+            height: barHeightCss,
             backgroundColor: '#E0E0E0',
             borderRadius: '8px'
           }}
@@ -102,64 +145,26 @@ const EngagementBar = ({ teacher, isSummary = false }) => {
               width: `${percentage}%`,
               backgroundColor: color,
               borderRadius: isFullEngagement ? '8px' : '8px 0px 0px 8px',
-              clipPath: !isSummary && !isFullEngagement ? 
-                'polygon(0% 0%, 63% 1%, 100% 50%, 65% 100%, 0% 100%, 0% 53%)' : 
-                'none'
+              clipPath:
+                !isSummary && !isFullEngagement
+                  ? `polygon(0 0, calc(100% - ${arrowHeadWidthPx}px) 0, 100% 50%, calc(100% - ${arrowHeadWidthPx}px) 100%, 0 100%)`
+                  : 'none'
             }}
           >
-            {/* White chevron dividers for 100% engagement */}
+            {/* Responsive chevrons for 100% engagement */}
             {!isSummary && isFullEngagement && (
-              <>
-                {/* First chevron */}
-                <div
-                  className="absolute"
-                  style={{
-                    left: '358px',
-                    top: '0px'
-                  }}
-                >
-                  <svg width="29" height="44" viewBox="0 0 29 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 -1L27 23L2 47" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                
-                {/* Second chevron */}
-                <div
-                  className="absolute"
-                  style={{
-                    left: '664px',
-                    top: '0px'
-                  }}
-                >
-                  <svg width="29" height="44" viewBox="0 0 29 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 -1L27 23L2 47" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                
-                {/* Third chevron */}
-                <div
-                  className="absolute"
-                  style={{
-                    left: '948px',
-                    top: '0px'
-                  }}
-                >
-                  <svg width="29" height="44" viewBox="0 0 29 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 -1L27 23L2 47" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </>
+              <FullWidthChevronOverlay chevrons={isSmallScreen ? 2 : 3} />
             )}
           </div>
-          
+
           {/* Percentage text for partial engagement */}
           {!isSummary && !isFullEngagement && (
             <div
-              className="absolute top-1/2 transform -translate-y-1/2"
+              className="absolute top-1/2 -translate-y-1/2"
               style={{
-                right: '15%', // Positioned to avoid the arrow area
+                right: '16px',
                 fontFamily: 'Poppins, sans-serif',
-                fontSize: '18px',
+                fontSize: 'clamp(14px, 2.6vw, 18px)',
                 fontWeight: 600,
                 color: '#103358'
               }}
@@ -177,7 +182,7 @@ const EngagementBar = ({ teacher, isSummary = false }) => {
     return (
       <div 
         className="flex rounded-lg overflow-hidden mb-8"
-        style={{ height: '50px' }}
+        style={{ height: 'clamp(32px, 6vw, 50px)' }}
       >
         {segments.map((segment, index) => {
           const isFirst = index === 0;
@@ -198,7 +203,7 @@ const EngagementBar = ({ teacher, isSummary = false }) => {
                 style={{
                   fontFamily: 'Poppins, sans-serif',
                   fontWeight: 500,
-                  fontSize: '18px',
+                  fontSize: 'clamp(12px, 2.2vw, 18px)',
                   lineHeight: '27px',
                   color: segment.color === 'white' ? '#343C6A' : '#FFFFFF'
                 }}
@@ -227,52 +232,60 @@ const EngagementBar = ({ teacher, isSummary = false }) => {
   return (
     <I18nProvider>
       <Layout showSidebar={false}>
-        <div className="p-8 max-w-[1300px] m-auto ">
+        <div className="px-4 py-6 lg:p-8 max-w-[1300px] m-auto ">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8 ">
-            <h1 className="text-3xl font-bold text-[#103358]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8 ">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#103358]">
               {t('teacherEngagement')}
             </h1>
             
             {/* Filter Dropdowns */}
-            <div className="flex space-x-4">
-              <FilterDropdown
-                label="GRADE"
-                value={filters.grade}
-                options={filterOptions.grade}
-                onChange={(value) => handleFilterChange('grade', value)}
-                width={filterWidths.grade}
-              />
-              <FilterDropdown
-                label="SUBJECT"
-                value={filters.subject}
-                options={filterOptions.subject}
-                onChange={(value) => handleFilterChange('subject', value)}
-                width={filterWidths.subject}
-              />
-              <FilterDropdown
-                label="DATE RANGE"
-                value={filters.dateRange}
-                options={filterOptions.dateRange}
-                onChange={(value) => handleFilterChange('dateRange', value)}
-                width={filterWidths.dateRange}
-              />
-              <FilterDropdown
-                label="TEACHERS"
-                value={filters.teachers}
-                options={filterOptions.teachers}
-                onChange={(value) => handleFilterChange('teachers', value)}
-                width={filterWidths.teachers}
-              />
+            <div className="flex flex-wrap gap-3 lg:gap-4 w-full lg:w-auto">
+              <div className="w-full sm:w-auto">
+                <FilterDropdown
+                  label="GRADE"
+                  value={filters.grade}
+                  options={filterOptions.grade}
+                  onChange={(value) => handleFilterChange('grade', value)}
+                  width={isSmallScreen ? '100%' : filterWidths.grade}
+                />
+              </div>
+              <div className="w-full sm:w-auto">
+                <FilterDropdown
+                  label="SUBJECT"
+                  value={filters.subject}
+                  options={filterOptions.subject}
+                  onChange={(value) => handleFilterChange('subject', value)}
+                  width={isSmallScreen ? '100%' : filterWidths.subject}
+                />
+              </div>
+              <div className="w-full sm:w-auto">
+                <FilterDropdown
+                  label="DATE RANGE"
+                  value={filters.dateRange}
+                  options={filterOptions.dateRange}
+                  onChange={(value) => handleFilterChange('dateRange', value)}
+                  width={isSmallScreen ? '100%' : filterWidths.dateRange}
+                />
+              </div>
+              <div className="w-full sm:w-auto">
+                <FilterDropdown
+                  label="TEACHERS"
+                  value={filters.teachers}
+                  options={filterOptions.teachers}
+                  onChange={(value) => handleFilterChange('teachers', value)}
+                  width={isSmallScreen ? '100%' : filterWidths.teachers}
+                />
+              </div>
             </div>
           </div>
 
           {/* Navigation and Sort */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
             <div 
               style={{
                 fontFamily: 'Poppins, sans-serif',
-                fontSize: '16px',
+                fontSize: 'clamp(14px, 2.4vw, 16px)',
                 color: '#103358'
               }}
             >
@@ -290,9 +303,9 @@ const EngagementBar = ({ teacher, isSummary = false }) => {
           <SummaryBar segments={engagementData?.summary?.segments || []} />
 
           {/* Individual Teacher Engagement */}
-          <div >
+          <div>
             {engagementData?.teachers?.map((teacher, index) => (
-              <EngagementBar key={index} teacher={teacher} />
+              <EngagementBar key={index} teacher={teacher} isSmallScreen={isSmallScreen} />
             ))}
           </div>
         </div>
