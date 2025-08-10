@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import Modal from '../components/ui/Modal';
 import Layout from '../components/layout/Layout';
 
 const sectionLinkId = (label) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -137,6 +138,71 @@ export default function AccountPage() {
   const [username, setUsername] = useState('admin');
   const [passwordMask] = useState('••••••••');
 
+  // Refs for date pickers so clicking the icon opens the picker
+  const currentDateRef = useRef(null);
+  const nextDateRef = useRef(null);
+
+  // Seed JSON data (can be replaced by API call later)
+  const [contacts] = useState([
+    { name: 'Alexander  Kunzetsov', email: 'doctorkunzetsov@gmail.com', phone: '+6589878700005', role: 'Account owner' }
+  ]);
+
+  const [subscriptions] = useState([
+    { purchasedAccess: '175 for 5 Steps Syllabus', allocatedTo: 'Grades 1- 10', licensesUsed: '165 of 175', note: '' },
+    { purchasedAccess: '', allocatedTo: '', licensesUsed: '165 of 175', note: 'Licenses Used' }
+  ]);
+
+  // Upload modal state
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState([]); // {name,size,progress,status}
+
+  // Welcome message modal state
+  const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
+  const [welcomeMessage, setWelcomeMessage] = useState(`5 Steps Academy is an accelerated learning school in Singapore.
+
+5 Steps' students break Singapore records in PSLE, O-level and A-level exams.
+
+Math Pilots provides comprehensive, MOE syllabus-aligned Maths programs offering unlimited practice in thousands of must-know skills.
+
+Practice and excel with 5 Steps!`);
+
+  // Change password modal
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [repeatPassword, setRepeatPassword] = useState('');
+
+  const onBrowseFiles = (files) => {
+    const mapped = Array.from(files).map((f) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: f.name,
+      size: f.size,
+      progress: 0,
+      status: 'uploading'
+    }));
+    setUploadFiles((prev) => [...prev, ...mapped]);
+    // Simulate progress deterministically to 100%
+    mapped.forEach((file, idx) => {
+      const interval = setInterval(() => {
+        setUploadFiles((prev) =>
+          prev.map((item) =>
+            item.id === file.id
+              ? {
+                  ...item,
+                  progress: Math.min(100, item.progress + 8),
+                  status: item.progress + 8 >= 100 ? 'completed' : item.status
+                }
+              : item
+          )
+        );
+      }, 150);
+      // Hard stop once complete
+      setTimeout(() => clearInterval(interval), 2500 + idx * 200);
+    });
+  };
+
+  const removeUpload = (i) => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i));
+
   return (
     <Layout>
       {/* Sidebar (only on md+) */}
@@ -169,7 +235,8 @@ export default function AccountPage() {
           <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8 md:p-10">
            
 
-            {/* First Day Of School */}
+            {/* First Day Of School */
+            }
             {(!selected || selected === 'First Day Of School') && (
             <section id={sectionLinkId('First Day Of School')} className="mb-8">
               <h3 className="text-[#103358] text-lg font-semibold mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -177,24 +244,46 @@ export default function AccountPage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <div className="text-[#4F4F4F] text-sm mb-2">Current school year (2023)</div>
+                  <div className="text-[#4F4F4F] text-sm mb-2">Current school year (2025)</div>
                   <div className="relative w-full max-w-[324px]">
-                    <input value={currentYearDate} onChange={(e)=>setCurrentYearDate(e.target.value)} placeholder="dd/mm/yyyy" className="w-full h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] placeholder-[#B0B0B0]" />
-                    <img src="/account/calender.svg" alt="" className="absolute right-2 top-1/2 -translate-y-1/2 w-[21px] h-[21px]" />
+                    <input
+                      ref={currentDateRef}
+                      type="date"
+                      value={currentYearDate}
+                      onChange={(e)=>setCurrentYearDate(e.target.value)}
+                      className="w-full h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black"
+                    />
+                    <img
+                      src="/account/calender.svg"
+                      alt=""
+                      onClick={() => currentDateRef.current?.showPicker ? currentDateRef.current.showPicker() : currentDateRef.current?.focus()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-[21px] h-[21px] cursor-pointer"
+                    />
                   </div>
                 </div>
                 <div>
-                  <div className="text-[#4F4F4F] text-sm mb-2">Next school year (2023)</div>
+                  <div className="text-[#4F4F4F] text-sm mb-2">Next school year (2025)</div>
                   <div className="relative w-full max-w-[324px]">
-                    <input value={nextYearDate} onChange={(e)=>setNextYearDate(e.target.value)} placeholder="dd/mm/yyyy" className="w-full h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] placeholder-[#B0B0B0]" />
-                    <img src="/account/calender.svg" alt="" className="absolute right-2 top-1/2 -translate-y-1/2 w-[21px] h-[21px]" />
+                    <input
+                      ref={nextDateRef}
+                      type="date"
+                      value={nextYearDate}
+                      onChange={(e)=>setNextYearDate(e.target.value)}
+                      className="w-full h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black"
+                    />
+                    <img
+                      src="/account/calender.svg"
+                      alt=""
+                      onClick={() => nextDateRef.current?.showPicker ? nextDateRef.current.showPicker() : nextDateRef.current?.focus()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-[21px] h-[21px] cursor-pointer"
+                    />
                   </div>
                 </div>
               </div>
             </section>
             )}
 
-            {(!selected || selected === 'First Day Of School') && <Divider />}
+            {selected == null && <Divider />}
 
             {/* Time Zone */}
             {(!selected || selected === 'Time Zone') && (
@@ -203,19 +292,17 @@ export default function AccountPage() {
                 Time Zone
               </h3>
               <div className="text-[#4F4F4F] text-sm mb-2">GMT + 08:00</div>
-              <div className="relative w-full max-w-[324px]">
-                <select value={tz} onChange={(e)=>setTz(e.target.value)} className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-[#103358]">
+              <div className="relative w-full max-w-[324px] p-3">
+                <select value={tz} onChange={(e)=>setTz(e.target.value)} className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black">
                   <option>GMT + 08:00 Singapore</option>
                   <option>GMT + 07:00 Bangkok</option>
                   <option>GMT + 05:30 India</option>
                 </select>
-                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#103358]" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.146l3.71-3.915a.75.75 0 111.08 1.04l-4.24 4.47a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
+               
               </div>
             </section>
             )}
-            {(!selected || selected === 'Time Zone') && <Divider />}
+            {selected == null && <Divider />}
 
             {/* Goals */}
             {(!selected || selected === 'Goals') && (
@@ -227,22 +314,22 @@ export default function AccountPage() {
                 <div>
                   <div className="text-[#103358] font-semibold mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Practice Time</div>
                   <div className="text-[#4F4F4F] text-sm mb-2">Per week, in hours</div>
-                  <input value={goalPractice} onChange={(e)=>setGoalPractice(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px]" />
+                  <input value={goalPractice} onChange={(e)=>setGoalPractice(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
                 </div>
                 <div>
                   <div className="text-[#103358] font-semibold mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Topics Mastered</div>
                   <div className="text-[#4F4F4F] text-sm mb-2">Per week</div>
-                  <input value={goalTopics} onChange={(e)=>setGoalTopics(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px]" />
+                  <input value={goalTopics} onChange={(e)=>setGoalTopics(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
                 </div>
                 <div>
                   <div className="text-[#103358] font-semibold mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Desired Mark</div>
                   <div className="text-[#4F4F4F] text-sm mb-2">from 50 to 100</div>
-                  <input value={goalMark} onChange={(e)=>setGoalMark(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px]" />
+                  <input value={goalMark} onChange={(e)=>setGoalMark(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
                 </div>
               </div>
             </section>
             )}
-            {(!selected || selected === 'Goals') && <Divider />}
+            {selected == null && <Divider />}
 
             {/* Custom Sign-in-page */}
             {(!selected || selected === 'Custom Sign-in-page') && (
@@ -256,10 +343,10 @@ export default function AccountPage() {
               <Label>Page URL</Label>
               <div className="flex items-center gap-3 mb-6">
                 <a className="text-[#398AC8] whitespace-nowrap" href="#">www.takespace.co./signin/</a>
-                <input value={pageName} onChange={(e)=>setPageName(e.target.value)} placeholder="type your page name here" className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px]" />
+                <input value={pageName} onChange={(e)=>setPageName(e.target.value)} placeholder="type your page name here" className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
               </div>
               <div className="flex items-start gap-6">
-                <img src="/logo.svg" alt="brand" className="w-20 h-20" />
+                <img src="/logo.svg" alt="brand" className="w-20 h-20 cursor-pointer" onClick={() => setIsUploadOpen(true)} />
                 <div className="flex-1 space-y-4">
                   <div>
                     <Label>Welcome Header</Label>
@@ -268,17 +355,14 @@ export default function AccountPage() {
                   <div>
                     <Label>Welcome Message</Label>
                     <div className="text-[#4F4F4F] space-y-2">
-                      <p>Practice and excel with Ms Alya!</p>
-                      <p>Here the teacher’s welcome message is displayed.</p>
-                      <p>Something about outstanding results and proprietory methods.</p>
-                      <p>Something encouraging.</p>
+                      <button className="text-[#398AC8] underline" onClick={() => setIsWelcomeOpen(true)}>Edit welcome message</button>
                     </div>
                   </div>
                 </div>
               </div>
             </section>
             )}
-            {(!selected || selected === 'Custom Sign-in-page') && <Divider />}
+            {selected == null && <Divider />}
 
             {/* Account Contacts */}
             {(!selected || selected === 'Account Contacts') && (
@@ -290,11 +374,13 @@ export default function AccountPage() {
               </div>
               <div className="overflow-hidden rounded-lg">
                 <TableHeader columns={["Name", "Email", "Phone", "Role"]} />
-                <TableRow values={["Alexander  Kunzetsov", "doctorkunzetsov@gmail.com", "+6589878700005", "Account owner"]} last />
+                {contacts.map((c, idx) => (
+                  <TableRow key={idx} values={[c.name, c.email, c.phone, c.role]} last={idx === contacts.length - 1} />
+                ))}
               </div>
             </section>
             )}
-            {(!selected || selected === 'Account Contacts') && <Divider />}
+            {selected == null && <Divider />}
 
             {/* Current Subscriptions */}
             {(!selected || selected === 'Current Subscriptions') && (
@@ -306,12 +392,22 @@ export default function AccountPage() {
               </div>
               <div className="overflow-hidden rounded-lg">
                 <TableHeader columns={["Purchased Access", "Allocated To", "Licenses Used", ""]} />
-                <TableRow values={["175 for 5 Steps Syllabus", "Grades 1- 10", <span className="text-green-600">165 of 175</span>, ""]} />
-                <TableRow values={["", "", <span className="text-green-600">165 of 175</span>, <span className="text-gray-500">Licenses Used</span>]} last />
+                {subscriptions.map((s, idx) => (
+                  <TableRow
+                    key={idx}
+                    values={[
+                      s.purchasedAccess,
+                      s.allocatedTo,
+                      <span className="text-green-600">{s.licensesUsed}</span>,
+                      <span className="text-gray-500">{s.note}</span>
+                    ]}
+                    last={idx === subscriptions.length - 1}
+                  />
+                ))}
               </div>
             </section>
             )}
-            {(!selected || selected === 'Current Subscriptions') && <Divider />}
+            {selected == null && <Divider />}
 
             {/* Username & Password */}
             {(!selected || selected === 'Username & Password') && (
@@ -324,13 +420,11 @@ export default function AccountPage() {
                   <Label>Username</Label>
                   <div className="flex items-center gap-2">
                     <div className="relative w-full max-w-[240px]">
-                      <select value={username} onChange={(e)=>setUsername(e.target.value)} className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-[#103358]">
+                      <select value={username} onChange={(e)=>setUsername(e.target.value)} className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black">
                         <option value="admin">admin</option>
                         <option value="teacher">teacher</option>
                       </select>
-                      <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#103358]" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.146l3.71-3.915a.75.75 0 111.08 1.04l-4.24 4.47a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                      </svg>
+                     
                     </div>
                     <span className="text-[#BDBDBD]">@5steps</span>
                   </div>
@@ -340,20 +434,145 @@ export default function AccountPage() {
                   <Label>Password</Label>
                   <div className="flex items-center gap-3">
                     <div className="relative w-full max-w-[240px]">
-                       <select className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-[#103358]">
+                       <select className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black">
                         <option>{passwordMask}</option>
                       </select>
-                      <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#103358]" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.146l3.71-3.915a.75.75 0 111.08 1.04l-4.24 4.47a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                      </svg>
+                      
                     </div>
-                    <a href="#" className="text-[#398AC8]">Change</a>
+                    <button type="button" className="text-[#398AC8]" onClick={() => setIsPasswordOpen(true)}>Change</button>
                   </div>
                 </div>
               </div>
             </section>
             )}
           </div>
+          {/* Upload Modal */}
+          {/* Upload Modal (Figma sizing and spacing) */}
+          <Modal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} overlayColor="#103358" overlayOpacity={0.7} className="w-[614px] h-[599px] rounded-[29.98px] p-0 flex flex-col">
+            <div className="relative">
+              {/* Header */}
+              <div className="flex items-center justify-between px-[28.6764px] pt-6 pb-4 border-b border-[#CBD0DC]">
+                <div className="flex items-center gap-3">
+                  <img src="/account/uploadicon.svg" alt="upload" className="w-6 h-6" />
+                  <div>
+                    <div className="text-[22.159px] leading-[27px] font-medium text-[#292D32]">Upload files</div>
+                    <div className="text-[18.9px] leading-[23px] text-[#A9ACB4]">Select and upload the files oof your choice</div>
+                  </div>
+                </div>
+                <button onClick={() => setIsUploadOpen(false)}>
+                  <img src="/account/cross.svg" alt="close" className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Body */}
+              <div className="relative px-6 pt-6 pb-4">
+                {/* Drag and drop area */}
+                <div className="relative" style={{ background: '#FFFFFF', border: '2.60695px dashed #CBD0DC', borderRadius: '16.9452px', paddingTop: '140px', paddingBottom: '120px' }}>
+                  <div className="absolute inset-0" />
+                  <div className="absolute left-[15.46%] right-[15.46%] top-[16.59%] flex flex-col items-center gap-[31.28px]">
+                    <div className="w-[29.98px] h-[29.98px]">
+                      <img src="/account/uploadicon.svg" alt="cloud" className="w-7 h-7" />
+                    </div>
+                    <div className="flex flex-col items-center gap-[9.78px] w-[385px]">
+                      <div className="text-[19.55px] leading-6 text-center text-[#292D32]">Choose a file or drag & drop it here</div>
+                      <div className="text-[16.95px] leading-[21px] text-center text-[#A9ACB4]">JPEG, PNG, PDG, and MP4 formats, up to 50MB</div>
+                    </div>
+                  </div>
+                  {/* Browse */}
+                  <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '68%' }}>
+                    <label className="cursor-pointer inline-flex items-center justify-center border border-[#CBD0DC] rounded-[10.4278px] px-[21.5073px] py-[10.4278px]">
+                      <span className="text-[19.55px] leading-6 text-[#54575C]">Browse File</span>
+                      <input type="file" multiple className="hidden" onChange={(e) => onBrowseFiles(e.target.files)} />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Uploaded list */}
+                {uploadFiles.length > 0 && (
+                  <div className="relative mt-6" style={{ background: '#EEF1F7', borderRadius: '16.9452px' }}>
+                    <div className="px-6 py-4 space-y-6">
+                      {uploadFiles.map((f, idx) => (
+                        <div key={f.id} className="flex items-start justify-between">
+                          <div className="flex items-center gap-4">
+                            <img src="/logo.svg" alt="thumb" className="w-[75px] h-[73px] rounded-[10px] object-contain bg-white" />
+                            <div>
+                              <div className="text-[19.55px] text-[#292D32]">{f.name.split('.')[0]}</div>
+                              <div className="flex items-center gap-2 text-[16.29px]">
+                                <span className="text-[#A9ACB4]">{Math.round(f.size/1024)} KB</span>
+                                <span className="text-[#292D32]">{f.status === 'uploading' ? 'Uploading...' : 'Completed'}</span>
+                              </div>
+                              {/* Progress */}
+                              <div className="relative mt-3 w-full max-w-[512.27px] h-2 bg-[#CBD0DC] rounded">
+                                <div className="absolute top-0 left-0 h-2 bg-[#375EF9] rounded" style={{ width: `${f.progress}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                          {f.status === 'completed' && (
+                            <button onClick={() => removeUpload(idx)} className="text-gray-500 hover:text-gray-700" title="Delete">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0A48.11 48.11 0 017.5 5.25m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201V5.25m7.5 0h-7.5" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 mt-6">
+                  <button className="border border-[#16375A] text-[#16375A] bg-[rgba(12,104,199,0.06)] rounded-md px-4 py-2" onClick={() => setIsUploadOpen(false)}>Cancel</button>
+                  <button className="bg-[#16375A] text-white rounded-md px-4 py-2">Submit</button>
+                </div>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Welcome Message Modal */}
+          <Modal isOpen={isWelcomeOpen} onClose={() => setIsWelcomeOpen(false)} overlayColor="#103358" overlayOpacity={0.7} className="w-[614px] rounded-[29.98px] p-0">
+            <div className="px-8 pt-8 text-[#103358]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <div className="text-[32px] font-semibold mb-4">Welcome Message</div>
+            </div>
+            <div className="px-8">
+              <textarea value={welcomeMessage} onChange={(e)=>setWelcomeMessage(e.target.value)} className="w-full h-64 border border-gray-200 rounded-2xl p-6 text-[#292D32] bg-white" />
+              <div className="flex justify-end gap-3 mt-6 pb-8">
+                <button className="border border-[#16375A] text-[#16375A] bg-[rgba(12,104,199,0.06)] rounded-md px-4 py-2" onClick={()=>setIsWelcomeOpen(false)}>Cancel</button>
+                <button className="bg-[#16375A] text-white rounded-md px-4 py-2" onClick={()=>setIsWelcomeOpen(false)}>Submit</button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Change Password Modal */}
+          <Modal isOpen={isPasswordOpen} onClose={() => setIsPasswordOpen(false)} overlayColor="#103358" overlayOpacity={0.7} className="w-[455px] h-[459px] rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] p-0">
+            <div className="relative w-full h-full">
+              <div className="absolute left-[37px] top-[36px] text-[20px] font-medium text-[#103358]" style={{ fontFamily: 'Poppins, sans-serif' }}>Change your password</div>
+              {/* Inputs group */}
+              <div className="absolute left-[37px] top-[87px] w-[380px]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                {/* Current Password */}
+                <div className="mb-4 relative" style={{ height: '79px' }}>
+                  <div className="absolute left-0 top-0 text-[14px] leading-5 text-[#374151]">Current Password</div>
+                  <input type="password" value={currentPassword} onChange={(e)=>setCurrentPassword(e.target.value)} className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" />
+                </div>
+                {/* New Password */}
+                <div className="mb-4 relative" style={{ height: '79px' }}>
+                  <div className="absolute left-0 top-0 text-[14px] leading-5 text-[#374151]">New Password</div>
+                  <input type="password" value={newPassword} onChange={(e)=>setNewPassword(e.target.value)} className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" />
+                </div>
+                {/* Repeat New Password */}
+                <div className="relative" style={{ height: '79px' }}>
+                  <div className="absolute left-0 top-0 text-[14px] leading-5 text-[#374151]">Repeat New Password</div>
+                  <input type="password" value={repeatPassword} onChange={(e)=>setRepeatPassword(e.target.value)} className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" />
+                </div>
+              </div>
+              {/* Buttons */}
+              <div className="absolute left-[244.5px] top-[383px] flex gap-2">
+                <button className="border border-[#16375A] text-[#16375A] bg-[rgba(12,104,199,0.06)] rounded-[8px] px-4 py-2 w-[92px] h-[40px]" onClick={()=>setIsPasswordOpen(false)}>Cancel</button>
+                <button className="bg-[#16375A] text-white rounded-[8px] px-4 py-2 w-[73px] h-[40px]">Save</button>
+              </div>
+              {/* Divider */}
+              <div className="absolute left-[39px] top-[70px] w-[378px] border-t border-[#D9E7EF]" />
+            </div>
+          </Modal>
         </div>
       </div>
     </Layout>
