@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const TopicsDisplay = ({
@@ -23,6 +23,41 @@ const TopicsDisplay = ({
 }) => {
   const { t } = useTranslation();
   const [selectedFilters, setSelectedFilters] = useState({});
+
+  // Refs and state for custom center scrollbar synced with left column scroll
+  const leftScrollRef = useRef(null);
+  const [trackMetrics, setTrackMetrics] = useState({
+    trackHeight: 0,
+    thumbHeight: 0,
+    thumbOffset: 0
+  });
+
+  // Helper to recalc track metrics
+  const recalcTrackMetrics = () => {
+    const el = leftScrollRef.current;
+    if (!el) return;
+    const client = el.clientHeight;
+    const scroll = el.scrollHeight;
+    const trackHeight = client; // Match visual track to the actual visible area height
+    const ratio = scroll > 0 ? client / scroll : 1;
+    const thumbHeight = Math.max(20, Math.round(trackHeight * ratio));
+    const maxThumbOffset = Math.max(0, trackHeight - thumbHeight);
+    const progress = scroll > client ? el.scrollTop / (scroll - client) : 0;
+    const thumbOffset = Math.round(maxThumbOffset * progress);
+    setTrackMetrics({ trackHeight, thumbHeight, thumbOffset });
+  };
+
+  useEffect(() => {
+    recalcTrackMetrics();
+    const handleResize = () => recalcTrackMetrics();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLeftScroll = () => {
+    recalcTrackMetrics();
+  };
 
   const getStatusDot = (status) => {
     if (!status) return null;
@@ -91,7 +126,8 @@ const TopicsDisplay = ({
           boxShadow: '0px 2px 6px rgba(13, 10, 44, 0.08)'
         }}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 relative">
+        {/* 3-column grid on large screens: left | center track | right */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-12 xl:gap-16 relative">
           {/* Left Column */}
           <div className="relative">
             <h2 
@@ -109,6 +145,8 @@ const TopicsDisplay = ({
             </h2>
             
             <div 
+              ref={leftScrollRef}
+              onScroll={scrollable ? handleLeftScroll : undefined}
               className={scrollable ? "scrollable-content pr-4" : ""}
               style={{
                 maxHeight: scrollable ? maxHeight : 'auto',
@@ -116,7 +154,7 @@ const TopicsDisplay = ({
               }}
             >
               {leftColumn.topics.map((topic, index) => (
-                <div key={topic.id || index} className="flex items-center justify-between py-1">
+                <div key={topic.id || index} className="flex items-center justify-between py-2.5">
                   <span 
                     className="flex-1 mr-4"
                     style={{
@@ -124,7 +162,7 @@ const TopicsDisplay = ({
                       fontStyle: 'normal',
                       fontWeight: 400,
                       fontSize: 'clamp(11px, 2vw, 13px)',
-                      lineHeight: '20px',
+                      lineHeight: '39px',
                       color: '#000000'
                     }}
                   >
@@ -135,6 +173,39 @@ const TopicsDisplay = ({
               ))}
             </div>
           </div>
+
+          {/* Center custom scrollbar track (visible on lg+) */}
+          {showSeparator && (
+            <div className="hidden lg:flex flex-col items-center">
+              {/* Spacer to align with headings margin */}
+              <div className="mb-4 sm:mb-6" style={{ height: 0 }} />
+              <div
+                aria-hidden
+                style={{
+                  width: '6px',
+                  height: `${trackMetrics.trackHeight || parseInt(maxHeight, 10) || 520}px`,
+                  background: '#F2F2F2',
+                  borderRadius: '40px',
+                  position: 'relative'
+                }}
+              >
+                {/* Thumb */}
+                {trackMetrics.trackHeight > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: `${trackMetrics.thumbOffset}px`,
+                      width: '6px',
+                      height: `${trackMetrics.thumbHeight}px`,
+                      background: '#398AC8',
+                      borderRadius: '40px'
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Right Column */}
           <div className="relative">
@@ -154,7 +225,7 @@ const TopicsDisplay = ({
             
             <div>
               {rightColumn.topics.map((topic, index) => (
-                <div key={topic.id || index} className="flex items-center justify-between py-1">
+                <div key={topic.id || index} className="flex items-center justify-between py-2.5">
                   <span 
                     className="flex-1 mr-4"
                     style={{
@@ -162,7 +233,7 @@ const TopicsDisplay = ({
                       fontStyle: 'normal',
                       fontWeight: 400,
                       fontSize: 'clamp(11px, 2vw, 13px)',
-                      lineHeight: '20px',
+                      lineHeight: '39px',
                       color: '#000000'
                     }}
                   >
@@ -174,8 +245,8 @@ const TopicsDisplay = ({
             </div>
           </div>
 
-          {/* Center Separator Line */}
-          {showSeparator && (
+          {/* Fallback thin separator for non-scrollable mode or when track hidden */}
+          {!scrollable && showSeparator && (
             <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-[1px] bg-[#E5E5E5] transform -translate-x-1/2"></div>
           )}
         </div>
