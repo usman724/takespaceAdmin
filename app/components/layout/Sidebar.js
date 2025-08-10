@@ -18,6 +18,7 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
   const [expandedSections, setExpandedSections] = useState(['subject', 'grade']);
   const [imageErrors, setImageErrors] = useState({});
   const [mounted, setMounted] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Ensure component is mounted before rendering images
   useEffect(() => {
@@ -61,11 +62,244 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
     setImageErrors(prev => ({ ...prev, [subjectId]: false }));
   };
 
+  // Reusable sidebar content (subject + grade sections)
+  const SidebarContent = () => (
+    <div className="h-full flex flex-col">
+      {/* Subject Section */}
+      <div className="relative flex-shrink-0">
+        {/* Subject Header */}
+        <div 
+          className="px-[20px] py-4 cursor-pointer relative"
+          onClick={() => toggleSection('subject')}
+          style={{
+            width: '250px',
+            height: '60px',
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          {/* Left border indicator - same height as header */}
+          <div 
+            className="absolute left-0 bg-[#103358] rounded-r-lg"
+            style={{
+              width: '6px',
+              height: '60px',
+              top: '0'
+            }}
+          />
+          
+          <div className="flex items-center justify-between w-full">
+            <span 
+              style={{
+                fontFamily: 'Poppins, sans-serif',
+                fontWeight: 600,
+                fontSize: '18px',
+                lineHeight: '20px',
+                color: '#103358'
+              }}
+            >
+              {t('subject')}
+            </span>
+            <div className="relative w-5 h-5">
+              {/* Use SVG directly instead of img for chevron */}
+              <svg
+                className={`w-5 h-5 transition-transform ${
+                  expandedSections.includes('subject') ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="#103358"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Subject Items */}
+        {expandedSections.includes('subject') && (
+          <div className="px-11">
+            <div className="space-y-0">
+              {displaySubjects.map((subject, index) => (
+                <div key={subject.id}>
+                  <div className="flex items-center py-3 cursor-pointer hover:bg-gray-50">
+                    <div className="w-5 h-5 mr-4 flex items-center justify-center">
+                      {imageErrors[subject.id] ? (
+                        // Fallback: Show colored square if image fails
+                        <div 
+                          className="w-4 h-4 rounded"
+                          style={{ 
+                            backgroundColor: subject.id === 'math' ? '#2563eb' :
+                                             subject.id === 'science' ? '#16a34a' :
+                                             subject.id === 'english' ? '#ea580c' : 
+                                             '#2563eb'
+                          }}
+                        />
+                      ) : (
+                        <img
+                          key={`${subject.id}-${subject.icon}`} // Force re-render with key
+                          src={subject.icon}
+                          alt={subject.name}
+                          className="w-5 h-5"
+                          onError={(e) => {
+                            console.log(`Error loading ${subject.icon}:`, e);
+                            handleImageError(subject.id, subject.icon);
+                          }}
+                          onLoad={() => handleImageLoad(subject.id)}
+                          style={{ 
+                            display: 'block',
+                            maxWidth: '100%',
+                            maxHeight: '100%',
+                            objectFit: 'contain'
+                          }}
+                          loading="eager" // Force immediate loading
+                        />
+                      )}
+                    </div>
+                    <span 
+                      style={{
+                        fontFamily: 'Poppins, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '16px',
+                        color: '#103358'
+                      }}
+                    >
+                      {subject.name}
+                    </span>
+                  </div>
+                  {/* Line under each item */}
+                  <div 
+                    className="w-full mt-[11px]"
+                    style={{
+                      height: '1px',
+                      backgroundColor: '#F2F2F2',
+                      width: '176px'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Grade Section */}
+      <div className="relative flex-shrink-0">
+        {/* Grade Header */}
+        <div 
+          className="px-[20px] py-4 cursor-pointer relative"
+          onClick={() => toggleSection('grade')}
+          style={{
+            width: '250px',
+            height: '60px',
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          {/* Left border indicator - same height as header */}
+          <div 
+            className="absolute left-0 bg-[#103358] rounded-r-lg"
+            style={{
+              width: '6px',
+              height: '60px',
+              top: '0'
+            }}
+          />
+          
+          <div className="flex items-center justify-between w-full">
+            <span 
+              style={{
+                fontFamily: 'Poppins, sans-serif',
+                fontWeight: 600,
+                fontSize: '18px',
+                lineHeight: '20px',
+                color: '#103358'
+              }}
+            >
+              {t('grade')}
+            </span>
+            <div className="relative w-5 h-5">
+              {/* Use SVG directly instead of img for chevron */}
+              <svg
+                className={`w-5 h-5 transition-transform ${
+                  expandedSections.includes('grade') ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="#103358"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Grade Items */}
+        {expandedSections.includes('grade') && (
+          <div className="px-11">
+            <div className="space-y-0">
+              {displayGrades.map((grade, index) => (
+                <div key={grade.id}>
+                  <div className="flex items-center py-3 cursor-pointer hover:bg-gray-50">
+                    <div 
+                      className="flex items-center justify-center mr-4 rounded-full"
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        background: grade.selected ? '#103358' : 'rgba(0, 0, 0, 0.05)',
+                        borderRadius: '12px'
+                      }}
+                    >
+                      <span 
+                        style={{
+                          fontFamily: 'Roboto, sans-serif',
+                          fontWeight: 400,
+                          fontSize: '15px',
+                          lineHeight: '24px',
+                          color: grade.selected ? '#FFFFFF' : '#000000',
+                          textAlign: 'center'
+                        }}
+                      >
+                        {grade.id}
+                      </span>
+                    </div>
+                    <span 
+                      style={{
+                        fontFamily: 'Poppins, sans-serif',
+                        fontWeight: grade.selected ? 600 : 400,
+                        fontSize: '16px',
+                        color: '#103358'
+                      }}
+                    >
+                      {grade.name}
+                    </span>
+                  </div>
+                  {/* Line under each item */}
+                  <div 
+                    className="w-full"
+                    style={{
+                      height: '1px',
+                      backgroundColor: '#F2F2F2',
+                      marginLeft: '-44px',
+                      width: '176px'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
     return (
       <div 
-        className="fixed left-0 bg-white border-r border-gray-200"
+        className="hidden md:block fixed left-0 bg-white border-r border-gray-200"
         style={{
           top: '100px',
           height: 'calc(100vh - 100px)',
@@ -81,245 +315,75 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
   }
 
   return (
-    <div 
-      className="fixed left-0 bg-white border-r border-gray-200"
-      style={{
-        top: '100px',
-        height: 'calc(100vh - 100px)',
-        width: '250px',
-        overflow: 'hidden'
-      }}
-    >
-      <div className="h-full flex flex-col">
-        {/* Subject Section */}
-        <div className="relative flex-shrink-0">
-          {/* Subject Header */}
-          <div 
-            className="px-[20px] py-4 cursor-pointer relative"
-            onClick={() => toggleSection('subject')}
-            style={{
-              width: '250px',
-              height: '60px',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            {/* Left border indicator - same height as header */}
-            <div 
-              className="absolute left-0 bg-[#103358] rounded-r-lg"
-              style={{
-                width: '6px',
-                height: '60px',
-                top: '0'
-              }}
-            />
-            
-            <div className="flex items-center justify-between w-full">
-              <span 
-                style={{
-                  fontFamily: 'Poppins, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '18px',
-                  lineHeight: '20px',
-                  color: '#103358'
-                }}
-              >
-                {t('subject')}
-              </span>
-              <div className="relative w-5 h-5">
-                {/* Use SVG directly instead of img for chevron */}
-                <svg
-                  className={`w-5 h-5 transition-transform ${
-                    expandedSections.includes('subject') ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  stroke="#103358"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
+    <>
+      {/* Mobile: Toggle Button in same position as sidebar */}
+      <button
+        type="button"
+        aria-label="Open sidebar"
+        onClick={() => setIsMobileOpen(true)}
+        className="md:hidden fixed left-2 mt-[10px] z-50 bg-[#103358] text-white rounded-md p-2 shadow"
+        style={{ top: '100px' }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+          className="w-6 h-6"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
 
-          {/* Subject Items */}
-          {expandedSections.includes('subject') && (
-            <div className="px-11">
-              <div className="space-y-0">
-                {displaySubjects.map((subject, index) => (
-                  <div key={subject.id}>
-                    <div className="flex items-center py-3 cursor-pointer hover:bg-gray-50">
-                      <div className="w-5 h-5 mr-4 flex items-center justify-center">
-                        {imageErrors[subject.id] ? (
-                          // Fallback: Show colored square if image fails
-                          <div 
-                            className="w-4 h-4 rounded"
-                            style={{ 
-                              backgroundColor: subject.id === 'math' ? '#2563eb' :
-                                               subject.id === 'science' ? '#16a34a' :
-                                               subject.id === 'english' ? '#ea580c' : 
-                                               '#2563eb'
-                            }}
-                          />
-                        ) : (
-                          <img
-                            key={`${subject.id}-${subject.icon}`} // Force re-render with key
-                            src={subject.icon}
-                            alt={subject.name}
-                            className="w-5 h-5"
-                            onError={(e) => {
-                              console.log(`Error loading ${subject.icon}:`, e);
-                              handleImageError(subject.id, subject.icon);
-                            }}
-                            onLoad={() => handleImageLoad(subject.id)}
-                            style={{ 
-                              display: 'block',
-                              maxWidth: '100%',
-                              maxHeight: '100%',
-                              objectFit: 'contain'
-                            }}
-                            loading="eager" // Force immediate loading
-                          />
-                        )}
-                      </div>
-                      <span 
-                        style={{
-                          fontFamily: 'Poppins, sans-serif',
-                          fontWeight: 400,
-                          fontSize: '16px',
-                          color: '#103358'
-                        }}
-                      >
-                        {subject.name}
-                      </span>
-                    </div>
-                    {/* Line under each item */}
-                    <div 
-                      className="w-full mt-[11px]"
-                      style={{
-                        height: '1px',
-                        backgroundColor: '#F2F2F2',
-                        width: '176px'
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Grade Section */}
-        <div className="relative flex-shrink-0">
-          {/* Grade Header */}
-          <div 
-            className="px-[20px] py-4 cursor-pointer relative"
-            onClick={() => toggleSection('grade')}
-            style={{
-              width: '250px',
-              height: '60px',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            {/* Left border indicator - same height as header */}
-            <div 
-              className="absolute left-0 bg-[#103358] rounded-r-lg"
-              style={{
-                width: '6px',
-                height: '60px',
-                top: '0'
-              }}
-            />
-            
-            <div className="flex items-center justify-between w-full">
-              <span 
-                style={{
-                  fontFamily: 'Poppins, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '18px',
-                  lineHeight: '20px',
-                  color: '#103358'
-                }}
-              >
-                {t('grade')}
-              </span>
-              <div className="relative w-5 h-5">
-                {/* Use SVG directly instead of img for chevron */}
-                <svg
-                  className={`w-5 h-5 transition-transform ${
-                    expandedSections.includes('grade') ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  stroke="#103358"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Grade Items */}
-          {expandedSections.includes('grade') && (
-            <div className="px-11">
-              <div className="space-y-0">
-                {displayGrades.map((grade, index) => (
-                  <div key={grade.id}>
-                    <div className="flex items-center py-3 cursor-pointer hover:bg-gray-50">
-                      <div 
-                        className="flex items-center justify-center mr-4 rounded-full"
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          background: grade.selected ? '#103358' : 'rgba(0, 0, 0, 0.05)',
-                          borderRadius: '12px'
-                        }}
-                      >
-                        <span 
-                          style={{
-                            fontFamily: 'Roboto, sans-serif',
-                            fontWeight: 400,
-                            fontSize: '15px',
-                            lineHeight: '24px',
-                            color: grade.selected ? '#FFFFFF' : '#000000',
-                            textAlign: 'center'
-                          }}
-                        >
-                          {grade.id}
-                        </span>
-                      </div>
-                      <span 
-                        style={{
-                          fontFamily: 'Poppins, sans-serif',
-                          fontWeight: grade.selected ? 600 : 400,
-                          fontSize: '16px',
-                          color: '#103358'
-                        }}
-                      >
-                        {grade.name}
-                      </span>
-                    </div>
-                    {/* Line under each item */}
-                    <div 
-                      className="w-full"
-                      style={{
-                        height: '1px',
-                        backgroundColor: '#F2F2F2',
-                        marginLeft: '-44px',
-                        width: '176px'
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+      {/* Desktop: Persistent sidebar */}
+      <div 
+        className="hidden md:block fixed left-0 bg-white border-r border-gray-200"
+        style={{
+          top: '100px',
+          height: 'calc(100vh - 100px)',
+          width: '250px',
+          overflow: 'hidden'
+        }}
+      >
+        <SidebarContent />
       </div>
-    </div>
+
+      {/* Mobile: Slide-in sidebar with overlay */}
+      {isMobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/30" onClick={() => setIsMobileOpen(false)} />
+
+          {/* Drawer */}
+          <div 
+            className="absolute left-0 bg-white border-r border-gray-200 shadow-xl"
+            style={{
+              top: '100px',
+              height: 'calc(100vh - 100px)',
+              width: '250px',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              aria-label="Close sidebar"
+              onClick={() => setIsMobileOpen(false)}
+              className="absolute right-2 top-2 p-1 rounded hover:bg-gray-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#103358" strokeWidth="2" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="pt-8 h-full">
+              <SidebarContent />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

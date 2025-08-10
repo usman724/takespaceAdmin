@@ -55,10 +55,10 @@ const LearningPage = () => {
         />
         
         {/* Main Content */}
-        <div className="ml-[250px] p-4 sm:p-6 lg:p-8">
+        <div className="lg:ml-[250px] p-4 sm:p-6 lg:p-8">
           {/* Page Title */}
           <h1 
-            className="mb-6 sm:mb-8"
+            className="mb-6 sm:mb-8 xs:pl-[20px]"
             style={{
               fontFamily: 'Inter, sans-serif',
               fontStyle: 'normal',
