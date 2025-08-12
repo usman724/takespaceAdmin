@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/layout/Layout';
 import I18nProvider from '../components/providers/I18nProvider';
@@ -13,6 +14,7 @@ import Chart from '../components/ui/Chart';
 
 const StudentAnalyticsPage = () => {
   const { t } = useTranslation();
+  const router = useRouter();
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('studentAnalytics');
@@ -318,7 +320,13 @@ const StudentAnalyticsPage = () => {
   };
 
   const handleTabChange = (tabKey) => {
-    setActiveTab(tabKey);
+    const routeMap = {
+      studentAnalytics: '/analytics',
+      teacherEngagement: '/teacher-engagement',
+      teacherAnalytics: '/teacher-analytics'
+    };
+    const target = routeMap[tabKey];
+    if (target) router.push(target);
   };
 
   if (loading) {

@@ -1,11 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 const NavigationTabs = ({ 
   tabs = [], 
   activeTab, 
   onTabChange, 
   className = "" 
 }) => {
+  const router = useRouter();
   const defaultTabs = [
     { key: 'studentAnalytics', label: 'Student Analytics' },
     { key: 'teacherEngagement', label: 'Teacher Engagement' },
@@ -19,7 +22,19 @@ const NavigationTabs = ({
       {tabsToRender.map((tab) => (
         <button
           key={tab.key}
-          onClick={() => onTabChange && onTabChange(tab.key)}
+          onClick={() => {
+            if (onTabChange) {
+              onTabChange(tab.key);
+            } else {
+              const routeMap = {
+                studentAnalytics: '/analytics',
+                teacherEngagement: '/teacher-engagement',
+                teacherAnalytics: '/teacher-analytics'
+              };
+              const target = routeMap[tab.key];
+              if (target) router.push(target);
+            }
+          }}
           className="px-6 py-2 rounded-lg transition-colors hover:opacity-90"
           style={{
             backgroundColor: activeTab === tab.key ? '#103358' : '#398AC8',

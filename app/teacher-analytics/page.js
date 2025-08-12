@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/layout/Layout';
 import I18nProvider from '../components/providers/I18nProvider';
@@ -27,6 +28,7 @@ const EngagementChart = ({ title, percentage }) => (
 
 const TeacherAnalyticsPage = () => {
   const { t } = useTranslation();
+  const router = useRouter();
   const [pageData, setPageData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ grade: 'All grades', subject: 'All subjects', dateRange: 'Last 30 days' });

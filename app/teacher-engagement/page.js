@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
@@ -12,6 +13,7 @@ import NavigationTabs from '../components/common/NavigationTabs'; // Import the 
 
 const TeacherEngagementPage = () => {
   const { t } = useTranslation();
+  const router = useRouter();
   const [engagementData, setEngagementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('teacherEngagement');
@@ -69,9 +71,13 @@ const TeacherEngagementPage = () => {
   };
 
   const handleTabChange = (tabKey) => {
-    setActiveTab(tabKey);
-    // Here you can add navigation logic or API calls based on the selected tab
-    console.log('Tab changed to:', tabKey);
+    const routeMap = {
+      studentAnalytics: '/analytics',
+      teacherEngagement: '/teacher-engagement',
+      teacherAnalytics: '/teacher-analytics'
+    };
+    const target = routeMap[tabKey];
+    if (target) router.push(target);
   };
 
 // Scalable chevron overlay for full-width bars. The SVG scales to the bar size
