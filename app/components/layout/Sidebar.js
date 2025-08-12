@@ -302,7 +302,7 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
         className="hidden md:block fixed left-0 bg-white border-r border-gray-200"
         style={{
           top: '100px',
-          height: 'calc(100vh - 100px)',
+          height: 'calc(100vh - 100px - var(--footer-height))',
           width: '250px',
           overflow: 'hidden'
         }}
@@ -341,7 +341,7 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
         className="hidden md:block fixed left-0 bg-white border-r border-gray-200"
         style={{
           top: '100px',
-          height: 'calc(100vh - 100px)',
+          height: 'calc(100vh - 100px - var(--footer-height))',
           width: '250px',
           overflow: 'hidden'
         }}
@@ -360,7 +360,7 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
             className="absolute left-0 bg-white border-r border-gray-200 shadow-xl"
             style={{
               top: '100px',
-              height: 'calc(100vh - 100px)',
+              height: 'calc(100vh - 100px - var(--footer-height))',
               width: '250px',
               overflow: 'hidden'
             }}

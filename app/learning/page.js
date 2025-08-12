@@ -55,7 +55,7 @@ const LearningPage = () => {
         />
         
         {/* Main Content */}
-        <div className="lg:ml-[250px] p-4 sm:p-6 lg:p-8">
+        <div className="lg:ml-[250px] p-4 sm:p-6 lg:p-8" style={{ paddingBottom: 'calc(var(--footer-height) + 24px)' }}>
           {/* Page Title */}
           <h1 
             className="mb-6 sm:mb-8 xs:pl-[20px]"

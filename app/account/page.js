@@ -20,7 +20,7 @@ const AccountSidebar = ({ selected, onSelect }) => {
   return (
     <aside
       className="fixed left-0 bg-white border-r border-gray-200 hidden md:block"
-      style={{ top: '100px', height: 'calc(100vh - 100px)', width: '250px' }}
+      style={{ top: '100px', height: 'calc(100vh - 100px - var(--footer-height))', width: '250px' }}
     >
       <div className="h-full py-6">
         <div className="mb-6 text-[#103358] font-semibold px-[21px]" style={{ fontFamily: 'Poppins, sans-serif' }}>Account</div>
@@ -209,7 +209,7 @@ Practice and excel with 5 Steps!`);
       <AccountSidebar selected={selected} onSelect={(label) => setSelected(prev => (prev === label ? null : label))} />
 
       {/* Content */}
-      <div className="px-4 md:pl-[280px] md:pr-8 pt-6 md:pt-10">
+      <div className="px-4 md:pl-[280px] md:pr-8 pt-6 md:pt-10" style={{ paddingBottom: 'calc(var(--footer-height) + 24px)' }}>
         <div className="relative">
           {/* Title + info icon outside white container */}
           <div className="w-full flex items-center justify-between mb-4">

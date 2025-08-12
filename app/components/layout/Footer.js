@@ -20,56 +20,53 @@ const Footer = () => {
   ];
 
   const socialMediaIcons = [
-    { key: 'facebook', alt: 'Facebook' },
-    { key: 'twitter', alt: 'X (Twitter)' },
-    { key: 'youtube', alt: 'YouTube' },
-    { key: 'linkedin', alt: 'LinkedIn' }
+    { key: 'facebook', alt: 'Facebook', src: '/socialicon/facebook.svg' },
+    { key: 'twitter', alt: 'X (Twitter)', src: '/socialicon/twitter.svg' },
+    { key: 'youtube', alt: 'YouTube', src: '/socialicon/youtube.svg' },
+    { key: 'instagram', alt: 'Instagram', src: '/socialicon/instagram.svg' },
+    { key: 'linkedin', alt: 'LinkedIn', src: '/socialicon/linkedin.svg' }
   ];
 
   return (
     <footer className="bg-[#103358] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Links */}
-        <div className="flex flex-wrap justify-center items-center mb-6">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-[18px] pb-[12px]">
+        {/* Navigation Links - centered single row */}
+        <div className="flex flex-wrap justify-center items-center text-center mb-1">
           {footerLinks.map((link, index) => (
             <div key={link.key} className="flex items-center">
               <a
                 href={`/${link.key}`}
-                className="text-white hover:text-gray-300 transition-colors px-2"
+                className={`px-2 sm:px-3 text-white hover:text-gray-300 transition-colors ${
+                  link.key === 'privacyPolicy' ? 'font-semibold' : 'font-normal'
+                }`}
+                style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', lineHeight: '28px' }}
               >
                 {link.label}
               </a>
               {index < footerLinks.length - 1 && (
-                <span className="text-white px-2">|</span>
+                <span className="text-white/70" style={{ padding: '0 2px', lineHeight: '28px' }}>|</span>
               )}
             </div>
           ))}
         </div>
 
-        {/* Copyright and Social Media */}
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-4 md:mb-0">
-            {/* TS Logo */}
-            <div className="w-8 h-8 bg-[#398AC8] rounded-full flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-sm">TS</span>
+        {/* Second line - centered */}
+        <div className="w-full flex justify-center">
+          <div className="inline-flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', lineHeight: '28px' }}>
+            <div className="w-7 h-7 bg-[#398AC8] rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-[12px]">TS</span>
             </div>
-            <span className="text-white">{t('copyright')}</span>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <span className="text-white">{t('followUs')}</span>
-            <div className="flex space-x-3">
+            <span className="whitespace-nowrap">{t('copyright')}</span>
+            <span className="whitespace-nowrap">{t('followUs')}</span>
+            <div className="inline-flex items-center gap-2.5">
               {socialMediaIcons.map((icon) => (
                 <a
                   key={icon.key}
                   href={`/${icon.key}`}
-                  className="text-white hover:text-gray-300 transition-colors"
+                  className="inline-flex"
+                  aria-label={icon.alt}
                 >
-                  <img 
-                    src="" 
-                    alt={icon.alt} 
-                    className="w-5 h-5"
-                  />
+                  <img src={icon.src} alt={icon.alt} className="w-5 h-5" />
                 </a>
               ))}
             </div>
