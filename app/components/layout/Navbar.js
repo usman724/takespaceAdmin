@@ -97,7 +97,7 @@ const Navbar = () => {
     { key: 'learning', label: t('learning') },
     { key: 'analytics', label: t('analytics') },
     { key: 'students', label: t('students') },
-    { key: 'teachers', label: t('teachers') },
+    { key: 'teacher', label: t('teachers') },
     { key: 'leaderboard', label: t('leaderboards') },
     { key: 'account', label: t('account') }
   ];

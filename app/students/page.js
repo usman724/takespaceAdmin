@@ -802,16 +802,8 @@ const StudentsPage = () => {
   };
 
   const handleUploadRoster = () => {
-    // Upload roster functionality
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      console.log('File selected:', file);
-    };
-    input.click();
     setMoreDropdownOpen(false);
+    router.push('/roster');
   };
 
   const handleDeactivateCurrent = () => {
