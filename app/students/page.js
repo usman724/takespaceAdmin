@@ -243,6 +243,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
     {
       Header: 'Class',
       accessor: 'class',
+      responsiveClass: 'hidden xs:table-cell',
       Cell: ({ value }) => (
         <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins']">
           {value}
@@ -270,6 +271,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
     {
       Header: 'User Name',
       accessor: 'userName',
+      responsiveClass: 'hidden sm:table-cell',
       Cell: ({ value }) => (
         <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins']">
           {value}
@@ -279,8 +281,9 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
     {
       Header: 'Email',
       accessor: 'email',
+      responsiveClass: 'hidden md:table-cell',
       Cell: ({ value }) => (
-        <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins'] text-center">
+        <span className="text-[14px] leading-[20px] break-words text-[#103358] font-normal font-['Poppins'] text-center">
           {value}
         </span>
       )
@@ -288,6 +291,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
     {
       Header: 'Grade',
       accessor: 'grade',
+      responsiveClass: 'hidden xs:table-cell',
       Cell: ({ value }) => (
         <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins'] text-center">
           {value}
@@ -297,6 +301,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
     {
       Header: 'Subject',
       accessor: 'subjects',
+      responsiveClass: 'hidden sm:table-cell',
       Cell: ({ value }) => (
         <div className="flex items-center gap-[9px] h-[44px]">
           {Array.isArray(value) ? value.map((subject, index) => (
@@ -323,6 +328,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
     {
       Header: 'Teacher',
       accessor: 'teachers',
+      responsiveClass: 'hidden lg:table-cell',
       Cell: ({ value }) => (
         <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins']">
           {value}
@@ -332,6 +338,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
     {
       Header: 'Password',
       accessor: 'password',
+      responsiveClass: 'hidden xl:table-cell',
       Cell: ({ value }) => (
         <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins']">
           Password
@@ -412,6 +419,29 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
 
   const visiblePages = getVisiblePages();
 
+  // For responsive deactivated row colSpan
+  const tableRef = useRef(null);
+  const [visibleColumns, setVisibleColumns] = useState(0);
+
+  useEffect(() => {
+    const updateVisibleColumns = () => {
+      try {
+        if (!tableRef.current) return;
+        const headerCells = tableRef.current.querySelectorAll('thead th');
+        let count = 0;
+        headerCells.forEach((th) => {
+          if (th.offsetParent !== null) count += 1; // counts only visible cells
+        });
+        setVisibleColumns(count || headerCells.length || 1);
+      } catch (_) {
+        setVisibleColumns(headerGroups?.[0]?.headers?.length || 1);
+      }
+    };
+    updateVisibleColumns();
+    window.addEventListener('resize', updateVisibleColumns);
+    return () => window.removeEventListener('resize', updateVisibleColumns);
+  }, [headerGroups]);
+
   return (
     <div className="overflow-x-auto">
       {/* Top Pagination */}
@@ -472,14 +502,14 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
         </div>
       )}
 
-      <table {...getTableProps()} className="w-full border-collapse">
+      <table ref={tableRef} {...getTableProps()} className="w-full table-fixed border-collapse">
         <thead>
           {headerGroups.map(headerGroup => (
             <tr {...headerGroup.getHeaderGroupProps()} className="bg-[#16375A] text-white rounded-t-lg">
               {headerGroup.headers.map(column => (
                 <th 
                   {...column.getHeaderProps(column.getSortByToggleProps())}
-                  className="px-6 py-4 text-left font-medium text-[16px] leading-[24px]"
+                  className={`px-6 py-4 text-left font-medium text-[16px] leading-[24px] ${column.responsiveClass || ''}`}
                 >
                   {column.render('Header')}
                 </th>
@@ -505,7 +535,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
                 onClick={!isDeleted ? () => onStudentClick(student) : undefined}
               >
                 {isDeleted ? (
-                  <td colSpan={11} className="px-6 py-4">
+                  <td colSpan={visibleColumns || 1} className="px-6 py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-white text-[14px] leading-[24px] font-normal font-['Poppins']">
                         {deletedStudent.firstName} {deletedStudent.lastName}'s account has been deactivated. 
@@ -523,7 +553,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
                   </td>
                 ) : (
                   row.cells.map(cell => (
-                    <td {...cell.getCellProps()} className="px-6 py-4">
+                    <td {...cell.getCellProps()} className={`px-6 py-4 align-top ${cell.column.responsiveClass || ''}`}>
                       {cell.render('Cell')}
                     </td>
                   ))
