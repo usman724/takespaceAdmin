@@ -26,3 +26,31 @@ body {
   color: var(--foreground);
   font-family: Poppins, Arial, Helvetica, sans-serif;
 }
+
+/* Global selection color */
+::selection {
+  background: #16375A;
+  color: #ffffff;
+}
+::-moz-selection {
+  background: #16375A;
+  color: #ffffff;
+}
+
+/* Focus styles for interactive form elements */
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  outline: 2px solid #16375A;
+  outline-offset: 2px;
+  border-color: #16375A;
+}
+
+/* Checkbox, radio, and range accent color */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+progress {
+  accent-color: #16375A;
+}
