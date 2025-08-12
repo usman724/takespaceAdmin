@@ -13,6 +13,7 @@ const HelpPage = () => {
     const [showAllArticles, setShowAllArticles] = useState(false);
     const [articlesData, setArticlesData] = useState({});
     const [loading, setLoading] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Load articles data from API
     useEffect(() => {
@@ -59,7 +60,7 @@ const HelpPage = () => {
             <Layout>
                 <div className="min-h-screen bg-white">
                     {/* Header Section with Background Image */}
-                    <div className="relative h-64  overflow-hidden">
+                    <div className="relative h-40 md:h-64 overflow-hidden">
                         <div className="absolute inset-0">
                             <Image
                                 src="/help/topheader.svg"
@@ -69,14 +70,14 @@ const HelpPage = () => {
                             />
                         </div>
                         <div className="relative z-10 flex items-center justify-center h-full">
-                            <h1 className="text-white text-5xl font-bold font-['Objective'] leading-[48px]">
+                            <h1 className="text-white text-3xl md:text-5xl font-bold font-['Objective'] leading-tight md:leading-[48px] text-center px-4">
                                 How Can We Help?
                             </h1>
                         </div>
                     </div>
 
                     {/* Getting Started Section */}
-                    <div className="px-24 py-12">
+                    <div className="px-6 md:px-24 py-8 md:py-12">
                         <div className="max-w-2xl">
                             <h2 className="text-2xl font-bold text-[#3F3F3F] mb-4 font-['Objective']">
                                 Getting Started
@@ -91,10 +92,58 @@ const HelpPage = () => {
                     </div>
 
                     {/* Main Content Area */}
-                    <div className="px-24 pb-12">
-                        <div className="flex gap-8">
+                    <div className="px-6 md:px-24 pb-12">
+                        {/* Mobile: Toggle to open topics */}
+                        <div className="md:hidden mb-4">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="w-full justify-center bg-white border border-[#D9E7EF] rounded-xl py-3 px-4 text-[#103358] font-['Poppins'] text-base flex items-center gap-2 shadow-sm"
+                                aria-label="Open topics menu"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                                    <path d="M3 6h18M3 12h18M3 18h18" stroke="#103358" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                Browse Topics
+                            </button>
+                        </div>
+
+                        {/* Mobile slide-over sidebar */}
+                        <div className={`fixed inset-0 z-50 md:hidden ${isSidebarOpen ? '' : 'pointer-events-none'}`} role="dialog" aria-modal="true">
+                            <div
+                                className={`absolute inset-0 bg-black/30 transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+                                onClick={() => setIsSidebarOpen(false)}
+                            />
+                            <div
+                                className={`absolute left-0 top-0 h-full w-72 max-w-[80%] bg-white shadow-2xl transform transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                            >
+                                <div className="relative h-full p-6">
+                                    <div className="absolute left-0 top-0 w-1 h-full bg-[#398AC8]"></div>
+                                    <div className="ml-4 space-y-6 overflow-y-auto h-full">
+                                        {categories.map((category) => (
+                                            <button
+                                                key={category}
+                                                onClick={() => {
+                                                    setActiveCategory(category);
+                                                    setShowAllArticles(false);
+                                                    setIsSidebarOpen(false);
+                                                }}
+                                                className={`block text-left font-['Objective'] text-base leading-[17px] transition-colors ${
+                                                    activeCategory === category
+                                                        ? 'text-[#398AC8] font-bold'
+                                                        : 'text-[#103358] font-medium'
+                                                }`}
+                                            >
+                                                {category}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-8">
                             {/* Left Navigation Sidebar */}
-                            <div className="w-48 flex-shrink-0">
+                            <div className="w-48 flex-shrink-0 hidden md:block">
                                 <div className="relative">
                                     {/* Blue vertical line */}
                                     <div className="absolute left-0 top-0 w-1 h-full bg-[#398AC8]"></div>
@@ -123,11 +172,11 @@ const HelpPage = () => {
 
                             {/* Right Content Panel */}
                             <div className="flex-1">
-                                <div className="bg-white rounded-[22px] shadow-lg p-12 min-h-[931px]">
+                                <div className="bg-white rounded-[22px] shadow-lg p-6 md:p-12 min-h-[500px] md:min-h-[931px]">
                                     <div className="max-w-4xl">
                                         {/* Header */}
                                         <div className="mb-8">
-                                            <h2 className="text-4xl font-bold mb-4 font-['Objective'] leading-[37px] bg-gradient-to-r from-[#20507A] to-[#2F71A8] bg-clip-text text-transparent">
+                                            <h2 className="text-2xl md:text-4xl font-bold mb-4 font-['Objective'] leading-[28px] md:leading-[37px] bg-gradient-to-r from-[#20507A] to-[#2F71A8] bg-clip-text text-transparent">
                                                 {activeCategory}
                                             </h2>
                                             <p className="text-[#948F8F] text-base leading-6 font-['Poppins']">
@@ -179,10 +228,7 @@ const HelpPage = () => {
                             Can't find what you are looking for?
                         </p>
                         <button className="bg-[#16375A] text-white px-6 py-4 rounded-lg font-['Poppins'] text-base leading-6 flex items-center gap-2 mx-auto hover:bg-[#2F71A8] transition-colors">
-                            <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                                <path d="M15 2C8.37 2 3 7.37 3 14C3 20.63 8.37 26 15 26C21.63 26 27 20.63 27 14C27 7.37 21.63 2 15 2ZM15 24C9.48 24 5 19.52 5 14C5 8.48 9.48 4 15 4C20.52 4 25 8.48 25 14C25 19.52 20.52 24 15 24Z" fill="white"/>
-                                <path d="M15 6C10.58 6 7 9.58 7 14C7 18.42 10.58 22 15 22C19.42 22 23 18.42 23 14C23 9.58 19.42 6 15 6ZM15 20C11.69 20 9 17.31 9 14C9 10.69 11.69 8 15 8C18.31 8 21 10.69 21 14C21 17.31 18.31 20 15 20Z" fill="white"/>
-                            </svg>
+                            <Image src="/help/contactsupport.svg" alt="Contact TS Support" width={30} height={30} />
                             Contact TS Support
                         </button>
                     </div>
