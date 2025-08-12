@@ -81,7 +81,7 @@ const AdvancedTable = ({
   return (
     <div className={`bg-white rounded-[20px] shadow-[0px_2px_6px_rgba(13,10,44,0.08)] overflow-hidden ${className}`}>
       {/* Table Header */}
-      <div className="flex justify-between items-center p-6 pb-4">
+      <div className="flex flex-wrap gap-3 justify-between items-center p-6 pb-4">
         <h3 
           style={{
             fontFamily: 'Poppins, sans-serif',
@@ -94,7 +94,7 @@ const AdvancedTable = ({
           {title}
         </h3>
         {showSearch && (
-          <div className="flex items-center bg-gray-100 rounded-lg px-4 py-2">
+          <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 w-full sm:w-auto">
             <svg className="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -103,7 +103,7 @@ const AdvancedTable = ({
               placeholder={searchPlaceholder} 
               value={globalFilter ?? ''}
               onChange={handleSearch}
-              className="bg-transparent outline-none text-sm w-32"
+              className="bg-transparent outline-none text-sm w-full sm:w-40"
               style={{
                 fontFamily: 'Poppins, sans-serif',
                 color: '#9CA3AF'
@@ -115,7 +115,7 @@ const AdvancedTable = ({
 
       {/* Table with horizontal scroll */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1200px]">
+        <table className="w-full min-w-full md:min-w-[900px] lg:min-w-[1200px] table-fixed">
           <thead>
             {multiLevelHeaders && headerGroups ? (
               // Multi-level headers
@@ -124,7 +124,7 @@ const AdvancedTable = ({
                   {headerGroup.cells.map((cell, cellIndex) => (
                     <th 
                       key={cellIndex}
-                      className={`px-6 py-4 text-white font-medium ${cell.align || 'text-left'}`}
+                      className={`px-3 md:px-6 py-2.5 md:py-4 text-white font-medium text-xs md:text-sm ${cell.align || 'text-left'}`}
                       colSpan={cell.colSpan || 1}
                       rowSpan={cell.rowSpan || 1}
                       style={{
@@ -144,7 +144,7 @@ const AdvancedTable = ({
                   {headerGroup.headers.map(header => (
                     <th
                       key={header.id}
-                      className={`px-6 py-4 text-white font-medium cursor-pointer hover:bg-[#2E4F73] transition-colors ${
+                      className={`px-3 md:px-6 py-2.5 md:py-4 text-white font-medium text-xs md:text-sm cursor-pointer hover:bg-[#2E4F73] transition-colors ${
                         header.column.getCanSort() ? 'cursor-pointer select-none' : ''
                       }`}
                       onClick={header.column.getToggleSortingHandler()}
@@ -182,7 +182,7 @@ const AdvancedTable = ({
                 onClick={() => onRowClick && onRowClick(row.original, index)}
               >
                 {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="px-6 py-4">
+                  <td key={cell.id} className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -215,7 +215,7 @@ const AdvancedTable = ({
 
           {/* Summary Stats */}
           {summaryStats && (
-            <div className="grid grid-cols-6 gap-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-center">
               {summaryStats.map((stat, index) => (
                 <div key={index}>
                   <div style={{ 

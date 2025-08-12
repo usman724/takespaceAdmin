@@ -187,7 +187,7 @@ const Chart = ({
 
   return (
     <div 
-      className={`bg-white rounded-[20px] p-8 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] ${className}`}
+      className={`bg-white rounded-[20px] p-5 sm:p-8 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] overflow-hidden ${className}`}
       style={{
         width,
         height,
@@ -197,10 +197,10 @@ const Chart = ({
       {/* Chart Title */}
       {title && (
         <h2 
-          className="mb-6"
+          className="mb-4 sm:mb-6"
           style={{
             fontFamily: 'Poppins, sans-serif',
-            fontSize: '20px',
+            fontSize: '18px',
             fontWeight: 600,
             color: '#103358'
           }}
@@ -233,7 +233,7 @@ const Chart = ({
         {/* Goal Line Annotation */}
         {showGoalLine && (
           <div 
-            className="absolute right-4 z-10 px-3 py-1 rounded text-white text-sm"
+            className="absolute right-2 sm:right-4 z-10 px-2 sm:px-3 py-1 rounded text-white text-xs sm:text-sm"
             style={{
               top: '20%',
               backgroundColor: '#398AC8',
@@ -247,7 +247,7 @@ const Chart = ({
         {/* Average Annotation */}
         {showAverage && (
           <div 
-            className="absolute right-4 z-10 px-2 py-1 rounded text-white text-xs"
+            className="absolute right-2 sm:right-4 z-10 px-2 py-1 rounded text-white text-[10px] sm:text-xs"
             style={{
               bottom: '25%',
               backgroundColor: '#103358',

@@ -344,14 +344,14 @@ const StudentAnalyticsPage = () => {
   return (
     <I18nProvider>
       <Layout showSidebar={false}>
-        <div className="p-8 max-w-[1400px] mx-auto">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-[1400px] mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-wrap gap-4 justify-between items-center mb-8">
             <h1 
               className="font-bold"
               style={{
                 fontFamily: 'Poppins, sans-serif',
-                fontSize: '24px',
+                fontSize: '20px',
                 color: '#103358'
               }}
             >
@@ -359,46 +359,46 @@ const StudentAnalyticsPage = () => {
             </h1>
             
             {/* Filter Dropdowns */}
-            <div className="flex space-x-4">
+            <div className="flex flex-wrap gap-3 sm:gap-4 w-full lg:w-auto">
               <FilterDropdown
                 label="GRADE"
                 value={filters.grade}
                 options={filterOptions.grade}
                 onChange={(value) => handleFilterChange('grade', value)}
-                width={filterWidths.grade}
+                className="w-full sm:w-[172px]"
               />
               <FilterDropdown
                 label="SUBJECT"
                 value={filters.subject}
                 options={filterOptions.subject}
                 onChange={(value) => handleFilterChange('subject', value)}
-                width={filterWidths.subject}
+                className="w-full sm:w-[207px]"
               />
               <FilterDropdown
                 label="DATE RANGE"
                 value={filters.dateRange}
                 options={filterOptions.dateRange}
                 onChange={(value) => handleFilterChange('dateRange', value)}
-                width={filterWidths.dateRange}
+                className="w-full sm:w-[225px]"
               />
               <FilterDropdown
                 label="TEACHERS"
                 value={filters.teachers}
                 options={filterOptions.teachers}
                 onChange={(value) => handleFilterChange('teachers', value)}
-                width={filterWidths.teachers}
+                className="w-full sm:w-[172px]"
               />
             </div>
           </div>
 
           {/* Navigation and Toggle */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-wrap gap-4 justify-between items-center mb-6">
             {/* Toggle Switch */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <span 
                 style={{
                   fontFamily: 'Poppins, sans-serif',
-                  fontSize: '16px',
+                  fontSize: '14px',
                   color: '#103358',
                   fontWeight: isWeeklyAverage ? 600 : 400
                 }}
@@ -407,21 +407,21 @@ const StudentAnalyticsPage = () => {
               </span>
               <button
                 onClick={() => setIsWeeklyAverage(!isWeeklyAverage)}
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="relative inline-flex h-5 w-10 sm:h-6 sm:w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 style={{
                   backgroundColor: isWeeklyAverage ? '#398AC8' : '#E5E7EB'
                 }}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    isWeeklyAverage ? 'translate-x-6' : 'translate-x-1'
+                  className={`inline-block h-3.5 w-3.5 sm:h-4 sm:w-4 transform rounded-full bg-white transition-transform ${
+                    isWeeklyAverage ? 'translate-x-5 sm:translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
               <span 
                 style={{
                   fontFamily: 'Poppins, sans-serif',
-                  fontSize: '16px',
+                  fontSize: '14px',
                   color: '#103358',
                   fontWeight: !isWeeklyAverage ? 600 : 400
                 }}
@@ -438,20 +438,23 @@ const StudentAnalyticsPage = () => {
           </div>
 
           {/* Bar Chart */}
+          <div className="overflow-x-hidden">
           <Chart
             type="bar"
             data={chartData}
             options={chartOptions}
             title="Question Answered Per Student"
-            height="320px"
+            height="280px"
             showGoalLine={true}
             goalValue={500}
             showAverage={true}
             averageValue={157}
             className="mb-8"
           />
+          </div>
 
           {/* Students Table */}
+          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
           <AdvancedTable
             data={tableData}
             columns={advancedTableColumns}
@@ -480,6 +483,7 @@ const StudentAnalyticsPage = () => {
               { label: 'Average', value: '33' }
             ]}
           />
+          </div>
         </div>
       </Layout>
     </I18nProvider>

@@ -18,7 +18,7 @@ const NavigationTabs = ({
   const tabsToRender = tabs.length > 0 ? tabs : defaultTabs;
 
   return (
-    <div className={`flex space-x-2 ${className}`}>
+    <div className={`flex flex-wrap gap-2 ${className}`}>
       {tabsToRender.map((tab) => (
         <button
           key={tab.key}
@@ -35,7 +35,7 @@ const NavigationTabs = ({
               if (target) router.push(target);
             }
           }}
-          className="px-6 py-2 rounded-lg transition-colors hover:opacity-90"
+          className="px-5 py-2 rounded-lg transition-colors hover:opacity-90 whitespace-nowrap"
           style={{
             backgroundColor: activeTab === tab.key ? '#103358' : '#398AC8',
             color: '#FFFFFF',

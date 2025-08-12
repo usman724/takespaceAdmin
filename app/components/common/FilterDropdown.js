@@ -6,7 +6,8 @@ const FilterDropdown = ({
   value,
   options = [],
   onChange,
-  width // Note: width prop is now optional for better responsiveness
+  width, // Optional fixed width for larger screens
+  className = '' // Allow responsive widths via utility classes
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -33,8 +34,12 @@ const FilterDropdown = ({
 
   const displayText = `${label}: ${value}`;
 
+  // If className is provided we avoid inlining width to let responsive
+  // utility classes (e.g., w-full sm:w-[172px]) take effect.
+  const rootStyle = className ? undefined : { width };
+
   return (
-    <div ref={dropdownRef} className="relative" style={{ width: width }}>
+    <div ref={dropdownRef} className={`relative ${className}`} style={rootStyle}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between w-full h-[46px] px-4 py-2 bg-white border border-black/5 rounded-lg shadow-[0px_0px_25px_rgba(0,0,0,0.05)] text-left"
