@@ -92,7 +92,7 @@ const StepperComponent = ({ currentStep, onBackClick }) => {
   };
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-white z-10 lg:w-64 lg:pl-[70px] md:w-56 sm:w-48">
+    <div className="hidden md:block fixed left-0 top-0 h-full w-56 md:w-56 lg:w-64 bg-white z-0 lg:pl-[70px]">
       <div style={{marginTop: '100px'}} className="p-6 pt-8">
         <button 
           onClick={onBackClick}

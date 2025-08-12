@@ -28,7 +28,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-[#103358] text-white">
+    <footer className="bg-[#103358] text-white relative z-10">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-[18px] pb-[12px]">
         {/* Navigation Links - centered single row */}
         <div className="flex flex-wrap justify-center items-center text-center mb-1">

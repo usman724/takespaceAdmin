@@ -97,10 +97,10 @@ const UploadRosterPage = () => {
   return (
     <I18nProvider>
       <Layout>
-        <div 
-          className="w-screen h-screen relative overflow-hidden" 
-          style={{ margin: 0, padding: 0, minHeight: '100vh', minWidth: '100vw' }}
-        >
+          <div 
+            className="w-full relative overflow-x-hidden" 
+            style={{ margin: 0, padding: 0, minHeight: '100vh' }}
+          >
           {/* Hidden File Input */}
           <input
             ref={fileInputRef}
@@ -117,7 +117,7 @@ const UploadRosterPage = () => {
           <StepperComponent currentStep={currentStep} onBackClick={handleBackToStudentList} />
 
           {/* Main Stage */}
-          <div className="absolute left-64 top-0 right-0 h-full">
+          <div className="absolute top-0 right-0 h-full left-0 md:left-56 lg:left-64">
             {currentStep === 1 && (
               <UploadStep
                 uploadedFile={uploadedFile}
