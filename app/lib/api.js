@@ -488,12 +488,27 @@ const getStudentsData = async () => fetcher(mockData.students);
 const getDashboardData = async () => fetcher(mockData.dashboard);
 
 // Combined function for the Teacher Analytics Page to load all its data
-const getTeacherAnalyticsPageData = async () => {
+// First tries the local API route (so later we can swap to real API),
+// and falls back to in-memory mock data if needed.
+const getTeacherAnalyticsPageData = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams({
+      grade: filters.grade || mockData.teacherAnalytics.filters.grade,
+      subject: filters.subject || mockData.teacherAnalytics.filters.subject,
+      dateRange: filters.dateRange || mockData.teacherAnalytics.filters.dateRange,
+    });
+    const res = await fetch(`/api/teacher-analytics?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed');
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    // Fallback to previously used combined mock
     const [analyticsData, dashboardData] = await Promise.all([
       getTeacherAnalyticsData(),
       getDashboardData()
     ]);
     return { ...analyticsData, ...dashboardData };
+  }
 };
 
 // Teachers page data

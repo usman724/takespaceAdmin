@@ -1,7 +1,7 @@
 'use client';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
-export default function PieChart({ title, data, colors }) {
+export default function PieChart({ title, data, colors, bare = false, height = 400 }) {
   // Calculate total for percentage calculation
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
@@ -58,7 +58,7 @@ export default function PieChart({ title, data, colors }) {
   return (
     <div className="w-full max-w-[400px]">
       {/* Title outside the card */}
-      <h3 
+      <h3
         className="mb-4"
         style={{
           fontFamily: 'Inter',
@@ -71,21 +71,20 @@ export default function PieChart({ title, data, colors }) {
         {title}
       </h3>
 
-      {/* Chart Card with exact padding */}
+      {/* Container (card or bare) */}
       <div
-        className="bg-white rounded-xl relative"
+        className={`${bare ? '' : 'bg-white rounded-xl shadow-[0px_2px_6px_rgba(13,10,44,0.08)] border border-black/5'} relative`}
         style={{
-       
           width: '100%',
-          height: '400px',
-          padding: '26px 47px 55px 46px' // Top Right Bottom Left
+          height: `${height}px`,
+          padding: bare ? '0' : '26px 47px 55px 46px'
         }}
       >
         {/* Chart Container */}
-        <div 
-          className="relative flex items-center justify-center" 
-          style={{ 
-            height: 'calc(100% - 40px)', // Account for legend space
+        <div
+          className="relative flex items-center justify-center"
+          style={{
+            height: bare ? '100%' : 'calc(100% - 40px)',
             width: '100%'
           }}
         >
@@ -111,201 +110,84 @@ export default function PieChart({ title, data, colors }) {
           </ResponsiveContainer>
         </div>
 
-        {/* Legend positioned at bottom */}
-        <div 
-          className="absolute bottom-0 left-0 right-0"
-          style={{
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bottom: '20px'
-          }}
-        >
-          {!isMasteryChart ? (
-            // Simple 2-item legend for Correct/Wrong
-            <div className="flex items-center justify-center gap-6">
-              {data.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      background: colors[index]
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      color: '#1D2026',
-                      fontWeight: '500'
-                    }}
-                  >
-                    {item.label}
-                  </span>
+        {/* Legend positioned at bottom (skip for bare) */}
+        {!bare && (
+          <div
+            className="absolute bottom-0 left-0 right-0"
+            style={{
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bottom: '20px'
+            }}
+          >
+            {!isMasteryChart ? (
+              <div className="flex items-center justify-center gap-6">
+                {data.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div
+                      className="rounded-full"
+                      style={{
+                        width: '12px',
+                        height: '12px',
+                        background: colors[index]
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontFamily: 'Inter',
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        color: '#1D2026',
+                        fontWeight: '500'
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <div className="rounded-full" style={{ width: '10px', height: '10px', background: colors[0] }} />
+                    <span style={{ fontFamily: 'Inter', fontSize: '11px', color: '#666', fontWeight: '400' }}>Mastered</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="rounded-full" style={{ width: '10px', height: '10px', background: colors[1] }} />
+                    <span style={{ fontFamily: 'Inter', fontSize: '11px', color: '#666', fontWeight: '400' }}>Revised Later</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="rounded-full" style={{ width: '10px', height: '10px', background: colors[2] }} />
+                    <span style={{ fontFamily: 'Inter', fontSize: '11px', color: '#666', fontWeight: '400' }}>Last Revision</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            // Multi-row legend for Mastery chart
-            <div className="flex flex-col items-center gap-1">
-              {/* First row */}
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      background: colors[0]
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '11px',
-                      color: '#666',
-                      fontWeight: '400'
-                    }}
-                  >
-                    Mastered
-                  </span>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <div className="rounded-full" style={{ width: '10px', height: '10px', background: colors[3] }} />
+                    <span style={{ fontFamily: 'Inter', fontSize: '11px', color: '#666', fontWeight: '400' }}>3 More Revision left</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="rounded-full" style={{ width: '10px', height: '10px', background: colors[4] }} />
+                    <span style={{ fontFamily: 'Inter', fontSize: '11px', color: '#666', fontWeight: '400' }}>Difficult</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      background: colors[1]
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '11px',
-                      color: '#666',
-                      fontWeight: '400'
-                    }}
-                  >
-                    Revised Later
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      background: colors[2]
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '11px',
-                      color: '#666',
-                      fontWeight: '400'
-                    }}
-                  >
-                    Last Revision
-                  </span>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <div className="rounded-full" style={{ width: '10px', height: '10px', background: '#FFC107' }} />
+                    <span style={{ fontFamily: 'Inter', fontSize: '11px', color: '#666', fontWeight: '400' }}>Haven't Started</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="rounded-full" style={{ width: '10px', height: '10px', background: '#FF9800' }} />
+                    <span style={{ fontFamily: 'Inter', fontSize: '11px', color: '#666', fontWeight: '400' }}>2 More Revision left</span>
+                  </div>
                 </div>
               </div>
-              
-              {/* Second row */}
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      background: colors[3]
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '11px',
-                      color: '#666',
-                      fontWeight: '400'
-                    }}
-                  >
-                    3 More Revision left
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      background: colors[4]
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '11px',
-                      color: '#666',
-                      fontWeight: '400'
-                    }}
-                  >
-                    Difficult
-                  </span>
-                </div>
-              </div>
-              
-              {/* Third row */}
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      background: '#FFC107'
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '11px',
-                      color: '#666',
-                      fontWeight: '400'
-                    }}
-                  >
-                    Haven't Started
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      background: '#FF9800'
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: '11px',
-                      color: '#666',
-                      fontWeight: '400'
-                    }}
-                  >
-                    2 More Revision left
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

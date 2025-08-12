@@ -77,6 +77,25 @@ const TeacherAnalyticsPage = () => {
     plugins: { legend: { display: false } }
   };
 
+  const TitleWithRefresh = ({ text, onClick }) => (
+    <div className="flex items-center gap-2">
+      <span>{text}</span>
+      <button
+        type="button"
+        aria-label="refresh"
+        onClick={onClick}
+        className="transition-transform hover:rotate-180"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#103358" strokeWidth="2">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.13-3.36L23 10"/>
+          <path d="M20.49 15a9 9 0 01-14.13 3.36L1 14"/>
+        </svg>
+      </button>
+    </div>
+  );
+
   // --- Render Logic ---
   if (loading && !pageData) { // Show initial loading spinner
     return <I18nProvider><Layout><div className="flex justify-center items-center h-screen">{t('loading')}</div></Layout></I18nProvider>;
@@ -134,18 +153,32 @@ const TeacherAnalyticsPage = () => {
                 </div>
               )}
 
-              <div className="bg-white rounded-xl p-4 sm:p-6">
-                <div className="h-[250px] sm:h-[350px]">
-                  <Chart type="bar" data={homeworkChartData} options={chartOptions} title={t('homeworkQuestions')} showGoalLine goalValue={pageData.homeworkQuestions.goal} showAverage averageValue={pageData.homeworkQuestions.average} />
-                </div>
-              </div>
-              <div className="bg-white rounded-xl p-4 sm:p-6">
-                <div className="h-[250px] sm:h-[350px]">
-                  <Chart type="bar" data={classroomChartData} options={chartOptions} title={t('classroomQuestions')} showGoalLine goalValue={pageData.classroomQuestions.goal} showAverage averageValue={pageData.classroomQuestions.average} />
-                </div>
-              </div>
+              <Chart
+                type="bar"
+                data={homeworkChartData}
+                options={chartOptions}
+                title={<TitleWithRefresh text={t('homeworkQuestions')} onClick={() => fetchData(filters)} />}
+                showGoalLine
+                goalValue={pageData.homeworkQuestions.goal}
+                showAverage
+                averageValue={pageData.homeworkQuestions.average}
+                className="border border-black/5"
+                height="350px"
+              />
+              <Chart
+                type="bar"
+                data={classroomChartData}
+                options={chartOptions}
+                title={<TitleWithRefresh text={t('classroomQuestions')} onClick={() => fetchData(filters)} />}
+                showGoalLine
+                goalValue={pageData.classroomQuestions.goal}
+                showAverage
+                averageValue={pageData.classroomQuestions.average}
+                className="border border-black/5"
+                height="350px"
+              />
               
-              <div className="bg-white rounded-xl p-4 sm:p-6">
+              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] border border-black/5">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-center">
                   <PieChart title={t('questionHomeworkToClasswork')} data={pageData.charts.homeworkToClasswork.data} colors={['#398AC8', '#103358']} />
                   <PieChart title={t('timeHomeworkToClasswork')} data={pageData.charts.timeComparison.data} colors={['#398AC8', '#103358']} />
@@ -153,7 +186,7 @@ const TeacherAnalyticsPage = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 sm:p-6">
+              <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] border border-black/5">
                 <h2 className="mb-4 sm:mb-6 text-lg sm:text-xl font-bold" style={{ color: '#398AC8' }}>{t('difficultTopicLeaderboard')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 sm:gap-x-8 gap-y-4 sm:gap-y-6">
                   {Object.keys(pageData.leaderboard).map(subjectKey => (
@@ -179,7 +212,7 @@ const TeacherAnalyticsPage = () => {
               </div>
 
               <div className="w-full lg:w-10/12 xl:w-8/12">
-                <div className="bg-white rounded-xl p-4 sm:p-6">
+                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] border border-black/5">
                   <h2 className="mb-4 sm:mb-6 text-lg sm:text-xl font-semibold" style={{ color: '#103358' }}>{t('defaultGoalsTitle')}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 items-start">
                     <div className="space-y-1 sm:space-y-2">
