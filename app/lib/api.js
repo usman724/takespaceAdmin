@@ -469,6 +469,55 @@ const fetcher = (data) => {
   });
 };
 
+// Real API functions
+const API_BASE_URL = 'https://dev.takespace.com/api/v1';
+const FIXED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3NzU2ODM1LCJpYXQiOjE3NTc2NzA0MzUsImp0aSI6ImNjNjQ3ZjZkZWVkZTQ4NDk4MDE4MjNhMjQ4NTkwMjUwIiwidXNlcl9pZCI6MX0.teahC5wAQEf33-3NK9dPqZ8krnDay78uFPPlJGnQf0M';
+
+const apiRequest = async (url, options = {}) => {
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${FIXED_TOKEN}`,
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      ...options.headers
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+// Get subjects
+const getSubjects = async () => {
+  try {
+    const data = await apiRequest(`${API_BASE_URL}/admin/students/subjects/`);
+    return data;
+  } catch (error) {
+    console.error('Error fetching subjects:', error);
+    throw error;
+  }
+};
+
+// Get units for a subject (with optional grade filter)
+const getUnits = async (subjectId, grade = null) => {
+  try {
+    let url = `${API_BASE_URL}/subjects/${subjectId}/units/?page=1`;
+    if (grade) {
+      url += `&grade=${grade}`;
+    }
+    
+    const data = await apiRequest(url);
+    return data;
+  } catch (error) {
+    console.error('Error fetching units:', error);
+    throw error;
+  }
+};
+
 // Learning page
 const getLearningData = async () => fetcher(mockData.learning);
 
@@ -527,6 +576,9 @@ export const api = {
   getTeacherAnalyticsPageData, // Use this for the main page
   getTeachersPageData,
   getStudentsPageData, // New function for students page
+  // Real API functions
+  getSubjects,
+  getUnits,
 };
 
 export default api;

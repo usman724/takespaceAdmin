@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 // Mock translation function
 const useTranslation = () => {
@@ -13,7 +13,14 @@ const useTranslation = () => {
   return { t };
 };
 
-const Sidebar = ({ subjects = [], grades = [] }) => {
+const Sidebar = ({ 
+  subjects = [], 
+  grades = [], 
+  selectedSubject = null, 
+  selectedGrade = null,
+  onSubjectSelect = () => {},
+  onGradeSelect = () => {}
+}) => {
   const { t } = useTranslation();
   const [expandedSections, setExpandedSections] = useState(['subject', 'grade']);
   const [imageErrors, setImageErrors] = useState({});
@@ -41,26 +48,52 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
     { id: '7', name: 'Grade 7', selected: false }
   ];
 
-  const displaySubjects = subjects.length > 0 ? subjects : defaultSubjects;
-  const displayGrades = grades.length > 0 ? grades : defaultGrades;
+  const displaySubjects = useMemo(() => 
+    subjects.length > 0 ? subjects : defaultSubjects, 
+    [subjects]
+  );
+  const displayGrades = useMemo(() => 
+    grades.length > 0 ? grades : defaultGrades, 
+    [grades]
+  );
 
-  const toggleSection = (section) => {
+  // Debug logging (only when props actually change)
+  useEffect(() => {
+    console.log('Sidebar props updated:', {
+      subjects: subjects.length,
+      grades: grades.length,
+      selectedSubject: selectedSubject?.name,
+      selectedGrade: selectedGrade?.name,
+      displaySubjects: displaySubjects.length,
+      displayGrades: displayGrades.length
+    });
+  }, [subjects, grades, selectedSubject, selectedGrade, displaySubjects, displayGrades]);
+
+  const toggleSection = useCallback((section) => {
     setExpandedSections(prev =>
       prev.includes(section)
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
-  };
+  }, []);
 
-  const handleImageError = (subjectId, imagePath) => {
+  const handleImageError = useCallback((subjectId, imagePath) => {
     console.log(`Image failed to load for: ${subjectId}, path: ${imagePath}`);
-    setImageErrors(prev => ({ ...prev, [subjectId]: true }));
-  };
+    setImageErrors(prev => {
+      // Only update if the error state actually changes
+      if (prev[subjectId] === true) return prev;
+      return { ...prev, [subjectId]: true };
+    });
+  }, []);
 
-  const handleImageLoad = (subjectId) => {
+  const handleImageLoad = useCallback((subjectId) => {
     console.log(`Image loaded successfully for: ${subjectId}`);
-    setImageErrors(prev => ({ ...prev, [subjectId]: false }));
-  };
+    setImageErrors(prev => {
+      // Only update if the error state actually changes
+      if (prev[subjectId] === false) return prev;
+      return { ...prev, [subjectId]: false };
+    });
+  }, []);
 
   // Reusable sidebar content (subject + grade sections)
   const SidebarContent = () => (
@@ -121,64 +154,70 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
         {expandedSections.includes('subject') && (
           <div className="px-11">
             <div className="space-y-0">
-              {displaySubjects.map((subject, index) => (
-                <div key={subject.id}>
-                  <div className="flex items-center py-3 cursor-pointer hover:bg-gray-50">
-                    <div className="w-5 h-5 mr-4 flex items-center justify-center">
-                      {imageErrors[subject.id] ? (
-                        // Fallback: Show colored square if image fails
-                        <div 
-                          className="w-4 h-4 rounded"
-                          style={{ 
-                            backgroundColor: subject.id === 'math' ? '#2563eb' :
-                                             subject.id === 'science' ? '#16a34a' :
-                                             subject.id === 'english' ? '#ea580c' : 
-                                             '#2563eb'
-                          }}
-                        />
-                      ) : (
-                        <img
-                          key={`${subject.id}-${subject.icon}`} // Force re-render with key
-                          src={subject.icon}
-                          alt={subject.name}
-                          className="w-5 h-5"
-                          onError={(e) => {
-                            console.log(`Error loading ${subject.icon}:`, e);
-                            handleImageError(subject.id, subject.icon);
-                          }}
-                          onLoad={() => handleImageLoad(subject.id)}
-                          style={{ 
-                            display: 'block',
-                            maxWidth: '100%',
-                            maxHeight: '100%',
-                            objectFit: 'contain'
-                          }}
-                          loading="eager" // Force immediate loading
-                        />
-                      )}
-                    </div>
-                    <span 
-                      style={{
-                        fontFamily: 'Poppins, sans-serif',
-                        fontWeight: 400,
-                        fontSize: '16px',
-                        color: '#103358'
-                      }}
+              {displaySubjects.map((subject, index) => {
+                const isSelected = selectedSubject && String(selectedSubject.id) === String(subject.id);
+                return (
+                  <div key={subject.id}>
+                    <div 
+                      className={`flex items-center py-3 cursor-pointer hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                      onClick={() => onSubjectSelect(subject)}
                     >
-                      {subject.name}
-                    </span>
+                      <div className="w-5 h-5 mr-4 flex items-center justify-center">
+                        {imageErrors[subject.id] ? (
+                          // Fallback: Show colored square if image fails
+                          <div 
+                            className="w-4 h-4 rounded"
+                            style={{ 
+                              backgroundColor: subject.id === 'math' || subject.id === '1' ? '#2563eb' :
+                                               subject.id === 'science' || subject.id === '3' ? '#16a34a' :
+                                               subject.id === 'english' || subject.id === '2' ? '#ea580c' : 
+                                               '#2563eb'
+                            }}
+                          />
+                        ) : (
+                          <img
+                            key={`${subject.id}-${subject.icon}`} // Force re-render with key
+                            src={subject.icon}
+                            alt={subject.name}
+                            className="w-5 h-5"
+                            onError={(e) => {
+                              console.log(`Error loading ${subject.icon}:`, e);
+                              handleImageError(subject.id, subject.icon);
+                            }}
+                            onLoad={() => handleImageLoad(subject.id)}
+                            style={{ 
+                              display: 'block',
+                              maxWidth: '100%',
+                              maxHeight: '100%',
+                              objectFit: 'contain'
+                            }}
+                            loading="eager" // Force immediate loading
+                          />
+                        )}
+                      </div>
+                      <span 
+                        style={{
+                          fontFamily: 'Poppins, sans-serif',
+                          fontWeight: isSelected ? 600 : 400,
+                          fontSize: '16px',
+                          color: isSelected ? '#2563eb' : '#103358'
+                        }}
+                      >
+                        {subject.name}
+                      </span>
+                    </div>
+                    {/* Line under each item */}
+                    <div 
+                      className="w-full mt-[11px]"
+                      style={{
+                        height: '1px',
+                        backgroundColor: '#F2F2F2',
+                        width: '176px'
+                      }}
+                    />
                   </div>
-                  {/* Line under each item */}
-                  <div 
-                    className="w-full mt-[11px]"
-                    style={{
-                      height: '1px',
-                      backgroundColor: '#F2F2F2',
-                      width: '176px'
-                    }}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -240,54 +279,60 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
         {expandedSections.includes('grade') && (
           <div className="px-11">
             <div className="space-y-0">
-              {displayGrades.map((grade, index) => (
-                <div key={grade.id}>
-                  <div className="flex items-center py-3 cursor-pointer hover:bg-gray-50">
+              {displayGrades.map((grade, index) => {
+                const isSelected = selectedGrade && String(selectedGrade.id) === String(grade.id);
+                return (
+                  <div key={grade.id}>
                     <div 
-                      className="flex items-center justify-center mr-4 rounded-full"
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        background: grade.selected ? '#103358' : 'rgba(0, 0, 0, 0.05)',
-                        borderRadius: '12px'
-                      }}
+                      className={`flex items-center py-3 cursor-pointer hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                      onClick={() => onGradeSelect(grade)}
                     >
-                      <span 
+                      <div 
+                        className="flex items-center justify-center mr-4 rounded-full"
                         style={{
-                          fontFamily: 'Roboto, sans-serif',
-                          fontWeight: 400,
-                          fontSize: '15px',
-                          lineHeight: '24px',
-                          color: grade.selected ? '#FFFFFF' : '#000000',
-                          textAlign: 'center'
+                          width: '24px',
+                          height: '24px',
+                          background: isSelected ? '#103358' : 'rgba(0, 0, 0, 0.05)',
+                          borderRadius: '12px'
                         }}
                       >
-                        {grade.id}
+                        <span 
+                          style={{
+                            fontFamily: 'Roboto, sans-serif',
+                            fontWeight: 400,
+                            fontSize: '15px',
+                            lineHeight: '24px',
+                            color: isSelected ? '#FFFFFF' : '#000000',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {grade.id}
+                        </span>
+                      </div>
+                      <span 
+                        style={{
+                          fontFamily: 'Poppins, sans-serif',
+                          fontWeight: isSelected ? 600 : 400,
+                          fontSize: '16px',
+                          color: isSelected ? '#2563eb' : '#103358'
+                        }}
+                      >
+                        {grade.name}
                       </span>
                     </div>
-                    <span 
+                    {/* Line under each item */}
+                    <div 
+                      className="w-full"
                       style={{
-                        fontFamily: 'Poppins, sans-serif',
-                        fontWeight: grade.selected ? 600 : 400,
-                        fontSize: '16px',
-                        color: '#103358'
+                        height: '1px',
+                        backgroundColor: '#F2F2F2',
+                        marginLeft: '-44px',
+                        width: '176px'
                       }}
-                    >
-                      {grade.name}
-                    </span>
+                    />
                   </div>
-                  {/* Line under each item */}
-                  <div 
-                    className="w-full"
-                    style={{
-                      height: '1px',
-                      backgroundColor: '#F2F2F2',
-                      marginLeft: '-44px',
-                      width: '176px'
-                    }}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -338,12 +383,13 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
 
       {/* Desktop: Persistent sidebar */}
       <div 
-        className="hidden md:block fixed left-0 bg-white border-r border-gray-200"
+        className="hidden md:block fixed left-0 bg-white border-r border-gray-200 sidebar-scroll"
         style={{
           top: '100px',
           height: 'calc(100vh - 100px - var(--footer-height))',
           width: '250px',
-          overflow: 'hidden'
+          overflowY: 'auto',
+          overflowX: 'hidden'
         }}
       >
         <SidebarContent />
@@ -362,7 +408,8 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
               top: '100px',
               height: 'calc(100vh - 100px - var(--footer-height))',
               width: '250px',
-              overflow: 'hidden'
+              overflowY: 'auto',
+              overflowX: 'hidden'
             }}
           >
             {/* Close button */}
@@ -383,6 +430,31 @@ const Sidebar = ({ subjects = [], grades = [] }) => {
           </div>
         </div>
       )}
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx global>{`
+        .sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e0 #f7fafc;
+        }
+        
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: #f7fafc;
+        }
+        
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background-color: #cbd5e0;
+          border-radius: 3px;
+        }
+        
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: #a0aec0;
+        }
+      `}</style>
     </>
   );
 };

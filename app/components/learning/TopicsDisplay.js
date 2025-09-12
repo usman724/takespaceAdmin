@@ -7,7 +7,9 @@ const TopicsDisplay = ({
   leftColumn = {
     title: '5.1 Fractions',
     topics: [],
-    showStatus: true
+    showStatus: true,
+    onItemClick: null,
+    selectedItem: null
   },
   rightColumn = {
     title: 'Units and Topics',
@@ -153,24 +155,31 @@ const TopicsDisplay = ({
                 overflowY: scrollable ? 'auto' : 'visible'
               }}
             >
-              {leftColumn.topics.map((topic, index) => (
-                <div key={topic.id || index} className="flex items-center justify-between py-2.5">
-                  <span 
-                    className="flex-1 mr-4"
-                    style={{
-                      fontFamily: 'Roboto, sans-serif',
-                      fontStyle: 'normal',
-                      fontWeight: 400,
-                      fontSize: 'clamp(11px, 2vw, 13px)',
-                      lineHeight: '39px',
-                      color: '#000000'
-                    }}
+              {leftColumn.topics.map((topic, index) => {
+                const isSelected = leftColumn.selectedItem && leftColumn.selectedItem.id === topic.id;
+                return (
+                  <div 
+                    key={topic.id || index} 
+                    className={`flex items-center justify-between py-2.5 ${leftColumn.onItemClick ? 'cursor-pointer hover:bg-gray-50' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
+                    onClick={() => leftColumn.onItemClick && leftColumn.onItemClick(topic)}
                   >
-                    {index + 1}. {topic.name}
-                  </span>
-                  {leftColumn.showStatus && getStatusDot(topic.status)}
-                </div>
-              ))}
+                    <span 
+                      className="flex-1 mr-4"
+                      style={{
+                        fontFamily: 'Roboto, sans-serif',
+                        fontStyle: 'normal',
+                        fontWeight: isSelected ? 600 : 400,
+                        fontSize: 'clamp(11px, 2vw, 13px)',
+                        lineHeight: '39px',
+                        color: isSelected ? '#2563eb' : '#000000'
+                      }}
+                    >
+                      {index + 1}. {topic.name}
+                    </span>
+                    {leftColumn.showStatus && getStatusDot(topic.status)}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -224,24 +233,30 @@ const TopicsDisplay = ({
             </h2>
             
             <div>
-              {rightColumn.topics.map((topic, index) => (
-                <div key={topic.id || index} className="flex items-center justify-between py-2.5">
-                  <span 
-                    className="flex-1 mr-4"
-                    style={{
-                      fontFamily: 'Roboto, sans-serif',
-                      fontStyle: 'normal',
-                      fontWeight: 400,
-                      fontSize: 'clamp(11px, 2vw, 13px)',
-                      lineHeight: '39px',
-                      color: '#000000'
-                    }}
-                  >
-                    {index + 1}. {topic.name}
-                  </span>
-                  {rightColumn.showStatus && getStatusDot(topic.status)}
+              {rightColumn.topics.length > 0 ? (
+                rightColumn.topics.map((topic, index) => (
+                  <div key={topic.id || index} className="flex items-center justify-between py-2.5">
+                    <span 
+                      className="flex-1 mr-4"
+                      style={{
+                        fontFamily: 'Roboto, sans-serif',
+                        fontStyle: 'normal',
+                        fontWeight: 400,
+                        fontSize: 'clamp(11px, 2vw, 13px)',
+                        lineHeight: '39px',
+                        color: '#000000'
+                      }}
+                    >
+                      {index + 1}. {topic.name}
+                    </span>
+                    {rightColumn.showStatus && getStatusDot(topic.status)}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 text-center py-8">
+                  {rightColumn.title.includes('Select a unit') ? 'No unit selected' : 'No topics available'}
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
