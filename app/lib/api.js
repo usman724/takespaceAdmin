@@ -791,6 +791,72 @@ export const api = {
   getSubjects,
   getUnits,
   updateSubjectGoals,
+  // --- Teachers (real) ---
+  async listTeachers({ search = '', subjectIds = [] } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (subjectIds.length) params.set('subjects', subjectIds.join(','));
+      const url = `${API_BASE_URL}/admin/teachers/${params.toString() ? `?${params.toString()}` : ''}`;
+      const data = await apiRequest(url);
+      // API returns an array or an object with data? Normalize to array
+      const teachers = Array.isArray(data) ? data : (data.data || []);
+      return teachers;
+    } catch (error) {
+      console.error('Error listing teachers:', error);
+      throw error;
+    }
+  },
+  async createTeacher({ firstName, lastName, email, username, subjectIds = [] }) {
+    try {
+      const body = {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        username,
+      };
+      if (Array.isArray(subjectIds) && subjectIds.length) {
+        body.subject_ids = subjectIds.map(Number);
+      }
+      const url = `${API_BASE_URL}/admin/teachers/`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json') ? await response.json() : null;
+      return { ok: response.ok, status: response.status, body: payload };
+    } catch (error) {
+      console.error('Error creating teacher:', error);
+      return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
+    }
+  },
+  async assignSubjectsToTeacher(teacherId, subjectIds = []) {
+    try {
+      const url = `${API_BASE_URL}/admin/teachers/${teacherId}/subjects/`;
+      const body = { subject_ids: subjectIds.map(Number) };
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json') ? await response.json() : null;
+      return { ok: response.ok, status: response.status, body: payload };
+    } catch (error) {
+      console.error('Error assigning subjects to teacher:', error);
+      return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
+    }
+  },
 };
 
 export default api;

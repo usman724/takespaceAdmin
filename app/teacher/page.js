@@ -9,6 +9,7 @@ import I18nProvider from '../components/providers/I18nProvider';
 import { AddTeacherModal, ResetPasswordModal } from './components/Modal';
 import TeacherDetailsModal from './components/Modal/TeacherDetailsModal';
 import { api } from '../lib/api';
+import toast, { Toaster } from 'react-hot-toast';
 import '../lib/i18n';
 
 // --- Reusable Components ---
@@ -382,13 +383,37 @@ const TeachersPage = () => {
     const [filteredTeachers, setFilteredTeachers] = useState([]);
     const [selectedTeacher, setSelectedTeacher] = useState(null);
     const [teacherDetailsModalOpen, setTeacherDetailsModalOpen] = useState(false);
+    const [subjectNameToId, setSubjectNameToId] = useState({});
+    const [subjectIdToName, setSubjectIdToName] = useState({});
+    const addTeacherModalRef = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const data = await api.getTeachersPageData();
+                // Load subjects first
+                const subjectsResponse = await api.getSubjects();
+                const subjects = Array.isArray(subjectsResponse) ? subjectsResponse : (subjectsResponse.data || []);
+                const subjectOptions = subjects.map(s => ({ id: String(s.id ?? s.subject_id ?? s.pk ?? ''), name: s.name || s.title || '-' })).filter(s => s.id);
+                const nameToId = Object.fromEntries(subjectOptions.map(s => [s.name, s.id]));
+                const idToName = Object.fromEntries(subjectOptions.map(s => [s.id, s.name]));
+                setSubjectNameToId(nameToId);
+                setSubjectIdToName(idToName);
+
+                // Load teachers
+                const teacherApiData = await api.listTeachers();
+                const teachers = teacherApiData.map(t => ({
+                    id: String(t.id || t.teacher_id || ''),
+                    name: t.full_name || t.name || '-',
+                    email: t.email || '-',
+                    totalStudents: Number(t.total_students || t.totalStudents || 0),
+                    status: t.status || 'active',
+                    subjects: Array.isArray(t.subjects) ? t.subjects.map(s => s.name || idToName[String(s.id)]).filter(Boolean) : []
+                }));
+
+                const subjectNames = subjectOptions.map(s => s.name);
+                const data = { teachers, subjects: subjectNames };
                 setPageData(data);
-                setFilteredTeachers(data.teachers);
+                setFilteredTeachers(teachers);
             } catch (error) {
                 console.error("Failed to fetch data:", error);
             } finally {
@@ -454,20 +479,64 @@ const TeachersPage = () => {
         }
     };
 
-    const handleAddTeacher = (newTeacherData) => {
-        const newTeacher = {
-            id: pageData.teachers.length + 2,
-            name: `${newTeacherData.firstName} ${newTeacherData.lastName}`,
-            email: newTeacherData.email,
-            totalStudents: 0,
-            status: 'active',
-            subjects: newTeacherData.subjects,
-        };
-        setPageData(prev => ({
-            ...prev,
-            teachers: [...prev.teachers, newTeacher]
-        }));
-        setFilteredTeachers(prev => [...prev, newTeacher]);
+    const handleAddTeacher = async (newTeacherData) => {
+        try {
+            // Map subject names to IDs
+            const subjectIds = (newTeacherData.subjects || [])
+                .map((name) => subjectNameToId[name])
+                .filter(Boolean)
+                .map((id) => Number(id));
+
+            // 1) Create teacher (include subject_ids if present)
+            const createdRes = await api.createTeacher({
+                firstName: newTeacherData.firstName,
+                lastName: newTeacherData.lastName,
+                email: newTeacherData.email,
+                username: newTeacherData.userName,
+                subjectIds,
+            });
+
+            if (!createdRes.ok) {
+                const msg = createdRes.body?.error?.message || 'Failed to create teacher';
+                toast.error(msg);
+                return { success: false };
+            }
+
+            const teacherId = String(createdRes.body?.id || createdRes.body?.teacher_id || '');
+
+            // 2) If backend ignored subject_ids on create or we have more to add, ensure assignment
+            if (teacherId && subjectIds.length) {
+                const assignRes = await api.assignSubjectsToTeacher(teacherId, subjectIds);
+                if (!assignRes.ok) {
+                    const msg = assignRes.body?.error?.message || 'Failed to assign subjects';
+                    toast.error(msg);
+                    return { success: false };
+                }
+            }
+
+            // 3) Refresh teachers list
+            const teacherApiData = await api.listTeachers();
+            const teachers = teacherApiData.map(t => ({
+                id: String(t.id || t.teacher_id || ''),
+                name: t.full_name || t.name || '-',
+                email: t.email || '-',
+                totalStudents: Number(t.total_students || t.totalStudents || 0),
+                status: t.status || 'active',
+                subjects: Array.isArray(t.subjects) ? t.subjects.map(s => s.name || subjectIdToName[String(s.id)]).filter(Boolean) : []
+            }));
+            setPageData(prev => ({ ...prev, teachers }));
+            setFilteredTeachers(teachers);
+
+            toast.success('Teacher created');
+            // Clear form after successful creation
+            if (addTeacherModalRef.current) {
+                addTeacherModalRef.current.resetForm();
+            }
+            return { success: true };
+        } catch (e) {
+            toast.error(String(e?.message || 'Unexpected error'));
+            return { success: false };
+        }
     };
 
     const handleResetPassword = () => {
@@ -535,6 +604,7 @@ const TeachersPage = () => {
     return (
         <I18nProvider>
             <Layout>
+                <Toaster position="top-right" />
                 <div className="p-8">
                     {/* Header Section */}
                     <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -618,7 +688,12 @@ const TeachersPage = () => {
                     {/* Table Section */}
                     <div className="bg-white rounded-xl shadow-md overflow-hidden">
                         <TeachersTable 
-                            data={filteredTeachers} 
+                            data={filteredTeachers.map(t => ({
+                                ...t,
+                                name: t.name || '-',
+                                email: t.email || '-',
+                                totalStudents: (t.totalStudents ?? '-')
+                            }))} 
                             onDelete={handleDelete}
                             onTeacherClick={handleTeacherClick}
                             deletedTeacher={deletedTeacher}
@@ -629,9 +704,15 @@ const TeachersPage = () => {
 
                 {/* --- Modals --- */}
                 <AddTeacherModal 
+                    ref={addTeacherModalRef}
                     isOpen={modal.type === 'add' && modal.isOpen} 
                     onClose={() => setModal({ isOpen: false, type: null })}
-                    onSubmit={handleAddTeacher}
+                    onSubmit={async (form) => {
+                        const res = await handleAddTeacher(form);
+                        if (res?.success) {
+                            setModal({ isOpen: false, type: null });
+                        }
+                    }}
                     subjects={pageData.subjects}
                     width="848px"
                     height="479px"

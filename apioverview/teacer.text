@@ -1,0 +1,96 @@
+Admin Teachers List API
+
+Endpoint:
+- GET https://dev.takespace.com/api/v1/admin/teachers/
+
+Headers (required):
+- Authorization: Bearer <access_token>
+- accept: application/json
+
+Query Parameters:
+- search (string): Search by teacher name, email, or username.
+- subjects (string): Comma-separated subject IDs to filter, e.g., "1,2,5".
+
+Success Response (200):
+- data (array): List of teacher objects
+  - id (string)
+  - full_name (string)
+  - username (string)
+  - email (string)
+  - total_students (string)
+  - subjects (array): Each item contains
+    - id (string)
+    - name (string)
+    - image (nullable)
+    - images (array)
+    - progress (nullable)
+    - status (nullable)
+    - quest_remaining_days (nullable)
+    - league (nullable)
+    - subject_xp (string)
+  - created_at (string, dd/MM/yyyy)
+  - modified_at (string, dd/MM/yyyy)
+- error: null on success
+
+Notes:
+- Filtering: Use "search" for text matching and "subjects" for subject-based filtering (IDs).
+- Dates appear in dd/MM/yyyy format in the sample.
+- The sample does not show pagination fields; if pagination exists, it is not included in this response example.
+
+
+Create Teacher API
+
+Endpoint:
+- POST https://dev.takespace.com/api/v1/admin/teachers/
+
+Headers (required):
+- Authorization: Bearer <access_token>
+- Content-Type: application/json
+- accept: application/json
+- X-CSRFTOKEN: <token> (may be required by environment)
+
+Request Body (application/json):
+- first_name (string)
+- last_name (string)
+- email (string)
+- username (string)
+- subject_ids (array of integers): Subject IDs to assign, e.g., [20]
+
+Success Response (201):
+- Returns the created teacher resource (schema: CreateTeacher / Teacher)
+  - id (string)
+  - first_name (string)
+  - last_name (string)
+  - full_name (string)
+  - username (string)
+  - email (string)
+  - subjects (array of subject objects)
+  - created_at (string)
+  - modified_at (string)
+
+Notes:
+- Requires JWT auth (Bearer token). CSRF header may be required if session-based.
+- Ensure email and username are unique as per backend validation.
+- Subject IDs must correspond to existing subjects.
+
+
+Assign Subjects to Teacher API
+
+Endpoint:
+- POST https://dev.takespace.com/api/v1/admin/teachers/{teacher_id}/subjects/
+
+Headers (required):
+- Authorization: Bearer <access_token>
+- Content-Type: application/json
+- accept: application/json
+- X-CSRFTOKEN: <token> (may be required by environment)
+
+Request Body (application/json):
+- subject_ids (array of integers): e.g., [5]
+
+Success Response (200/201):
+- Returns updated teacher subjects or confirmation payload depending on backend.
+
+Notes:
+- Call after creating a teacher to attach subjects.
+- Subject IDs must exist; duplicates are ignored or cause validation errors based on backend.

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const AddTeacherModal = ({ isOpen, onClose, onSubmit, subjects, width = '848px', height = '479px' }) => {
+const AddTeacherModal = forwardRef(({ isOpen, onClose, onSubmit, subjects, width = '848px', height = '479px' }, ref) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState({
         firstName: '',
@@ -12,6 +12,20 @@ const AddTeacherModal = ({ isOpen, onClose, onSubmit, subjects, width = '848px',
         userName: '',
         subjects: []
     });
+
+    const resetForm = () => {
+        setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            userName: '',
+            subjects: []
+        });
+    };
+
+    useImperativeHandle(ref, () => ({
+        resetForm
+    }));
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -27,10 +41,10 @@ const AddTeacherModal = ({ isOpen, onClose, onSubmit, subjects, width = '848px',
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSubmit(formData);
-        onClose();
+        await onSubmit(formData);
+        // Do not close here; parent will close only on success
     };
 
     if (!isOpen) return null;
@@ -192,6 +206,8 @@ const AddTeacherModal = ({ isOpen, onClose, onSubmit, subjects, width = '848px',
             </div>
         </div>
     );
-};
+});
+
+AddTeacherModal.displayName = 'AddTeacherModal';
 
 export default AddTeacherModal; 
