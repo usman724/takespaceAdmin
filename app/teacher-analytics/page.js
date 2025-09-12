@@ -10,6 +10,8 @@ import Chart from '../components/ui/Chart';
 import PieChart from '../components/analytics/PieChart';
 import { api } from '../lib/api';
 import '../lib/i18n'; // Ensure i18n is initialized for the component
+import SuccessMessage from '../components/common/SuccessMessage';
+import ErrorMessage from '../components/common/ErrorMessage';
 
 // --- Reusable Sub-components ---
 
@@ -33,6 +35,10 @@ const TeacherAnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ grade: 'All grades', subject: 'All subjects', dateRange: 'Last 30 days' });
   const [goals, setGoals] = useState({ practiceTime: 0, topicsMastered: 0, examDate: '' });
+  
+  const [savingGoals, setSavingGoals] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   // --- Data Fetching ---
   const fetchData = async (currentFilters) => {
@@ -50,6 +56,40 @@ const TeacherAnalyticsPage = () => {
       console.error("Failed to fetch analytics data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Save Goals Handler
+  const handleSaveGoals = async () => {
+    setSaveSuccess('');
+    setSaveError('');
+
+    // Basic validations per API rules
+    if (goals.examDate) {
+      const today = new Date();
+      const exam = new Date(goals.examDate);
+      if (exam <= today) {
+        setSaveError(t('examDateMustBeFuture') || 'Exam date must be in the future.');
+        return;
+      }
+    } else {
+      setSaveError(t('examDateRequired') || 'Exam date is required.');
+      return;
+    }
+
+    setSavingGoals(true);
+    try {
+      const res = await api.updateSubjectGoals(
+        { grade: filters.grade, subject: filters.subject },
+        { practiceTime: goals.practiceTime, topicsMastered: goals.topicsMastered, examDate: goals.examDate }
+      );
+      // Expecting 204 No Content semantics; some backends return empty JSON
+      setSaveSuccess(t('goalsUpdated') || 'Goals updated successfully.');
+    } catch (err) {
+      setSaveError(t('failedToUpdateGoals') || 'Failed to update goals.');
+      console.error(err);
+    } finally {
+      setSavingGoals(false);
     }
   };
 
@@ -107,10 +147,10 @@ const TeacherAnalyticsPage = () => {
 
   // Prepare Chart Data after ensuring pageData is loaded
   const homeworkChartData = {
-    labels: pageData.homeworkQuestions.labels,
+    labels: pageData.homeworkQuestions.labels || [],
     datasets: [{
       label: t('homeworkQuestions'),
-      data: pageData.homeworkQuestions.data,
+      data: pageData.homeworkQuestions.data || [],
       backgroundColor: '#398AC8',
       borderRadius: 4,
       barThickness: 'flex',
@@ -119,16 +159,29 @@ const TeacherAnalyticsPage = () => {
   };
 
   const classroomChartData = {
-    labels: pageData.classroomQuestions.labels,
+    labels: pageData.classroomQuestions.labels || [],
     datasets: [{
       label: t('classroomQuestions'),
-      data: pageData.classroomQuestions.data,
+      data: pageData.classroomQuestions.data || [],
       backgroundColor: '#398AC8',
       borderRadius: 4,
       barThickness: 'flex',
       maxBarThickness: 32,
     }]
   };
+
+  // Prepare pie chart data with fallback for empty data
+  const homeworkToClassworkData = pageData.charts?.homeworkToClasswork?.data || [
+    { label: 'Homework', value: 0 },
+    { label: 'Classwork', value: 0 }
+  ];
+
+  const timeComparisonData = pageData.charts?.timeComparison?.data || [
+    { label: 'Homework', value: 0 },
+    { label: 'Classwork', value: 0 }
+  ];
+
+  const teacherEngagementPercentage = pageData.charts?.teacherEngagement?.percentage || 0;
 
   return (
     <I18nProvider>
@@ -139,9 +192,9 @@ const TeacherAnalyticsPage = () => {
             <header className="flex flex-wrap justify-between items-center gap-4">
               <h1 className="font-bold text-xl sm:text-2xl" style={{ color: '#103358' }}>{t('teacherAnalytics')}</h1>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
-                <FilterDropdown label={t('gradeFilterLabel')} value={filters.grade} onChange={(v) => handleFilterChange('grade', v)} options={['All grades', 'Grade 5', 'Grade 6']} />
-                <FilterDropdown label={t('subjectFilterLabel')} value={filters.subject} onChange={(v) => handleFilterChange('subject', v)} options={['All subjects', 'Math', 'Science']} />
-                <FilterDropdown label={t('dateRangeFilterLabel')} value={filters.dateRange} onChange={(v) => handleFilterChange('dateRange', v)} options={['Last 30 days', 'Last 90 days']} />
+                <FilterDropdown label={t('gradeFilterLabel')} value={filters.grade} onChange={(v) => handleFilterChange('grade', v)} options={['All grades', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10']} />
+                <FilterDropdown label={t('subjectFilterLabel')} value={filters.subject} onChange={(v) => handleFilterChange('subject', v)} options={['All subjects', 'Math', 'Science', 'English', 'Geography']} />
+                <FilterDropdown label={t('dateRangeFilterLabel')} value={filters.dateRange} onChange={(v) => handleFilterChange('dateRange', v)} options={['Last 30 days', 'Last 7 days', 'Last 90 days', 'All time', 'Last year', 'Today', 'Yesterday']} />
               </div>
             </header>
             
@@ -180,40 +233,56 @@ const TeacherAnalyticsPage = () => {
               
               <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] border border-black/5">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-center">
-                  <PieChart title={t('questionHomeworkToClasswork')} data={pageData.charts.homeworkToClasswork.data} colors={['#398AC8', '#103358']} />
-                  <PieChart title={t('timeHomeworkToClasswork')} data={pageData.charts.timeComparison.data} colors={['#398AC8', '#103358']} />
-                  <EngagementChart title={t('teacherEngagement')} percentage={pageData.charts.teacherEngagement.percentage} />
+                  <PieChart title={t('questionHomeworkToClasswork')} data={homeworkToClassworkData} colors={['#398AC8', '#103358']} />
+                  <PieChart title={t('timeHomeworkToClasswork')} data={timeComparisonData} colors={['#398AC8', '#103358']} />
+                  <EngagementChart title={t('teacherEngagement')} percentage={teacherEngagementPercentage} />
                 </div>
               </div>
 
               <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] border border-black/5">
                 <h2 className="mb-4 sm:mb-6 text-lg sm:text-xl font-bold" style={{ color: '#398AC8' }}>{t('difficultTopicLeaderboard')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 sm:gap-x-8 gap-y-4 sm:gap-y-6">
-                  {Object.keys(pageData.leaderboard).map(subjectKey => (
-                     <div key={subjectKey}>
-                        <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold capitalize" style={{ color: '#103358' }}>{t(subjectKey)}</h3>
-                        <div className="space-y-2 sm:space-y-3">
-                          {pageData.leaderboard[subjectKey].map(topic => (
-                            <div key={topic.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-[#F0F7FF]">
-                              <div className="flex items-center space-x-2 min-w-0 flex-1">
-                                <span className="text-xs sm:text-sm text-gray-800 truncate">{topic.name}</span>
-                                <div className="w-[6px] h-[6px] sm:w-[7px] sm:h-[7px] bg-[#FF0000] flex-shrink-0" />
+                  {Object.keys(pageData.leaderboard || {}).length > 0 ? (
+                    Object.keys(pageData.leaderboard).map(subjectKey => (
+                       <div key={subjectKey}>
+                          <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold capitalize" style={{ color: '#103358' }}>{t(subjectKey)}</h3>
+                          <div className="space-y-2 sm:space-y-3">
+                            {pageData.leaderboard[subjectKey].map(topic => (
+                              <div key={topic.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-[#F0F7FF]">
+                                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                  <span className="text-xs sm:text-sm text-gray-800 truncate">{topic.name}</span>
+                                  <div className="w-[6px] h-[6px] sm:w-[7px] sm:h-[7px] bg-[#FF0000] flex-shrink-0" />
+                                </div>
+                                <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 ml-2">
+                                  <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="#398AC8" strokeWidth="2"><path d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21" /><path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" /></svg>
+                                  <span className="text-xs sm:text-sm font-medium text-[#398AC8]">{topic.count}</span>
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0 ml-2">
-                                <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="#398AC8" strokeWidth="2"><path d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21" /><path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" /></svg>
-                                <span className="text-xs sm:text-sm font-medium text-[#398AC8]">{topic.count}</span>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center py-8">
+                      <p className="text-gray-500 text-sm">{t('noDataAvailable')}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="w-full lg:w-10/12 xl:w-8/12">
                 <div className="bg-white rounded-xl p-4 sm:p-6 shadow-[0px_2px_6px_rgba(13,10,44,0.08)] border border-black/5">
                   <h2 className="mb-4 sm:mb-6 text-lg sm:text-xl font-semibold" style={{ color: '#103358' }}>{t('defaultGoalsTitle')}</h2>
+                  {saveSuccess && (
+                    <div className="mb-4">
+                      <SuccessMessage message={saveSuccess} />
+                    </div>
+                  )}
+                  {saveError && (
+                    <div className="mb-4">
+                      <ErrorMessage message={saveError} />
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 items-start">
                     <div className="space-y-1 sm:space-y-2">
                       <label className="block mb-1 text-sm sm:text-base font-semibold" style={{ color: '#103358' }}>{t('practiceTime')}</label>
@@ -232,6 +301,25 @@ const TeacherAnalyticsPage = () => {
                         <svg className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" stroke="#103358" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" /></svg>
                         </div>
                     </div>
+                    
+                  </div>
+                  <div className="mt-4 sm:mt-6 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Require specific grade and subject for API
+                        if (filters.grade === 'All grades' || filters.subject === 'All subjects') {
+                          setSaveError(t('selectSpecificGradeSubject') || 'Please select a specific grade and subject.');
+                          setSaveSuccess('');
+                          return;
+                        }
+                        handleSaveGoals();
+                      }}
+                      disabled={savingGoals}
+                      className={`px-4 py-2 rounded-md text-white ${savingGoals ? 'bg-[#398AC8]/60 cursor-not-allowed' : 'bg-[#398AC8] hover:bg-[#103358]'} transition-colors`}
+                    >
+                      {savingGoals ? (t('saving') || 'Saving...') : (t('saveGoals') || 'Save goals')}
+                    </button>
                   </div>
                 </div>
               </div>

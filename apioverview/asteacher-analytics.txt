@@ -1,0 +1,92 @@
+Admin API: Teacher Analytics (asteacher-analytics)
+
+Endpoint
+- Method: GET
+- Path: /api/v1/admin/teacher-analytics/{teacher_id}/
+- Auth: Bearer JWT (Authorization: Bearer <token>)
+- Tags: Admin
+
+Path Parameters
+- teacher_id (integer, required): The teacher's ID.
+
+Query Parameters
+- date_range (string, optional, default: 30d): Accepted values: 30d, 7d, all_time, last_year, today, yesterday.
+- grade (string, optional): Grade ID filter.
+- subject (string, optional): Subject ID filter.
+
+Success Response (200)
+- data.homework_questions
+  - labels: string[] (student names)
+  - data: number[] (counts per student)
+  - goal: number
+  - avg: number
+- data.classroom_questions
+  - labels: string[] (student names)
+  - data: number[] (counts per student)
+  - goal: number
+  - avg: number
+- data.homework_to_classwork_questions
+  - classwork: number
+  - homework: number
+- data.homework_to_classwork_time
+  - classwork_time: number
+  - homework_time: number
+- data.teacher_engagement: number (percentage)
+- data.difficult_topic_leaderboard: Array<{
+  - subject_name: string
+  - topics: Array<{
+    - code: string
+    - name: string
+    - student_names: string[]
+  }>
+}>
+
+Example Request
+curl 'https://dev.takespace.com/api/v1/admin/teacher-analytics/10/?date_range=30d&grade=2&subject=5' \
+  -H 'Authorization: Bearer <JWT>' \
+  -H 'accept: application/json'
+
+Example 200 Response
+{
+  "statusCode": 200,
+  "data": {
+    "homework_questions": {
+      "labels": ["Alice Johnson", "Bob Smith"],
+      "data": [42, 35],
+      "goal": 0,
+      "avg": 38
+    },
+    "classroom_questions": {
+      "labels": ["Alice Johnson", "Bob Smith"],
+      "data": [28, 31],
+      "goal": 0,
+      "avg": 29
+    },
+    "homework_to_classwork_questions": {
+      "classwork": 59,
+      "homework": 77
+    },
+    "homework_to_classwork_time": {
+      "classwork_time": 12,
+      "homework_time": 18
+    },
+    "teacher_engagement": 85,
+    "difficult_topic_leaderboard": [
+      {
+        "subject_name": "Mathematics",
+        "topics": [
+          {
+            "code": "ALG-101",
+            "name": "Linear Equations",
+            "student_names": ["Alice Johnson", "Bob Smith"]
+          }
+        ]
+      }
+    ]
+  },
+  "error": null
+}
+
+Notes
+- Ensure a valid JWT access token is supplied.
+- Use query params to slice analytics by time window, grade, and subject.

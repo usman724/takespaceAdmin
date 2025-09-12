@@ -544,27 +544,176 @@ const getStudentAnalyticsData = async () => fetcher(mockData.studentAnalytics);
 // Teacher Analytics (specific charts)
 const getTeacherAnalyticsData = async () => fetcher(mockData.teacherAnalytics);
 
+// Teacher Analytics API (real API with fixed teacher ID 10)
+const getTeacherAnalyticsAPI = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.dateRange) {
+      // Map filter values to API expected values
+      const dateRangeMap = {
+        'Last 30 days': '30d',
+        'Last 90 days': '90d',
+        'Last 7 days': '7d',
+        'All time': 'all_time',
+        'Last year': 'last_year',
+        'Today': 'today',
+        'Yesterday': 'yesterday'
+      };
+      params.set('date_range', dateRangeMap[filters.dateRange] || '30d');
+    }
+    if (filters.grade && filters.grade !== 'All grades') {
+      // Extract grade number from "Grade X" format
+      const gradeMatch = filters.grade.match(/Grade (\d+)/);
+      if (gradeMatch) {
+        params.set('grade', gradeMatch[1]);
+      }
+    }
+    if (filters.subject && filters.subject !== 'All subjects') {
+      // Map subject names to IDs (you may need to adjust these mappings)
+      const subjectMap = {
+        'Math': '1',
+        'Science': '2', 
+        'English': '3',
+        'Geography': '4'
+      };
+      if (subjectMap[filters.subject]) {
+        params.set('subject', subjectMap[filters.subject]);
+      }
+    }
+    
+    const url = `${API_BASE_URL}/admin/teacher-analytics/10/?${params.toString()}`;
+    const data = await apiRequest(url);
+    return data;
+  } catch (error) {
+    console.error('Error fetching teacher analytics:', error);
+    throw error;
+  }
+};
+
 // Students data table
 const getStudentsData = async () => fetcher(mockData.students);
 
 // Dashboard data (for pie charts, leaderboard, goals)
 const getDashboardData = async () => fetcher(mockData.dashboard);
 
+// Update Subject Goals (PATCH)
+// filters: { grade: 'Grade 5' | 'All grades', subject: 'Math' | 'All subjects' }
+// goals: { practiceTime: number, topicsMastered: number, examDate: string (YYYY-MM-DD), lastGradeTestScore?: number }
+const updateSubjectGoals = async (filters = {}, goals = {}) => {
+  try {
+    const params = new URLSearchParams();
+
+    // Extract grade id
+    if (filters.grade && filters.grade !== 'All grades') {
+      const gradeMatch = String(filters.grade).match(/Grade (\d+)/);
+      if (gradeMatch) {
+        params.set('grade', gradeMatch[1]);
+      }
+    }
+
+    // Map subject to id
+    if (filters.subject && filters.subject !== 'All subjects') {
+      const subjectMap = {
+        'Math': '1',
+        'Science': '2',
+        'English': '3',
+        'Geography': '4'
+      };
+      if (subjectMap[filters.subject]) {
+        params.set('subject', subjectMap[filters.subject]);
+      }
+    }
+
+    const url = `${API_BASE_URL}/admin/subject-goals/?${params.toString()}`;
+
+    // Build body. Only include provided values.
+    const body = {};
+    if (goals.practiceTime !== undefined && goals.practiceTime !== null && goals.practiceTime !== '') {
+      body.time_practiced_goal_per_week = Number(goals.practiceTime);
+    }
+    if (goals.topicsMastered !== undefined && goals.topicsMastered !== null && goals.topicsMastered !== '') {
+      body.topics_mastered_goal_per_week = Number(goals.topicsMastered);
+    }
+    if (goals.examDate) {
+      body.exam_date = goals.examDate;
+    }
+    if (goals.lastGradeTestScore !== undefined && goals.lastGradeTestScore !== null && goals.lastGradeTestScore !== '') {
+      body.last_grade_test_score = Number(goals.lastGradeTestScore);
+    }
+
+    // Send PATCH
+    const response = await apiRequest(url, {
+      method: 'PATCH',
+      body: JSON.stringify(body)
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Error updating subject goals:', error);
+    throw error;
+  }
+};
+
 // Combined function for the Teacher Analytics Page to load all its data
-// First tries the local API route (so later we can swap to real API),
-// and falls back to in-memory mock data if needed.
+// Uses real API with fallback to mock data
 const getTeacherAnalyticsPageData = async (filters = {}) => {
   try {
-    const params = new URLSearchParams({
-      grade: filters.grade || mockData.teacherAnalytics.filters.grade,
-      subject: filters.subject || mockData.teacherAnalytics.filters.subject,
-      dateRange: filters.dateRange || mockData.teacherAnalytics.filters.dateRange,
-    });
-    const res = await fetch(`/api/teacher-analytics?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed');
-    const json = await res.json();
-    return json;
+    // Use real API
+    const apiData = await getTeacherAnalyticsAPI(filters);
+    
+    // Format API response to match expected structure
+    const formattedData = {
+      homeworkQuestions: {
+        labels: apiData.data.homework_questions.labels || [],
+        data: apiData.data.homework_questions.data || [],
+        average: apiData.data.homework_questions.avg || 0,
+        goal: apiData.data.homework_questions.goal || 0
+      },
+      classroomQuestions: {
+        labels: apiData.data.classroom_questions.labels || [],
+        data: apiData.data.classroom_questions.data || [],
+        average: apiData.data.classroom_questions.avg || 0,
+        goal: apiData.data.classroom_questions.goal || 0
+      },
+      charts: {
+        homeworkToClasswork: {
+          data: [
+            { label: 'Homework', value: apiData.data.homework_to_classwork_questions.homework || 0 },
+            { label: 'Classwork', value: apiData.data.homework_to_classwork_questions.classwork || 0 }
+          ]
+        },
+        timeComparison: {
+          data: [
+            { label: 'Homework', value: apiData.data.homework_to_classwork_time.homework_time || 0 },
+            { label: 'Classwork', value: apiData.data.homework_to_classwork_time.classwork_time || 0 }
+          ]
+        },
+        teacherEngagement: {
+          percentage: apiData.data.teacher_engagement || 0
+        }
+      },
+      leaderboard: {
+        // Format difficult topic leaderboard
+        ...apiData.data.difficult_topic_leaderboard.reduce((acc, subject) => {
+          const subjectKey = subject.subject_name.toLowerCase();
+          acc[subjectKey] = subject.topics.map(topic => ({
+            id: topic.code,
+            name: topic.name,
+            count: topic.student_names.length
+          }));
+          return acc;
+        }, {})
+      },
+      goals: {
+        practiceTime: 5,
+        topicsMastered: 5,
+        examDate: ''
+      }
+    };
+    
+    return formattedData;
   } catch (err) {
+    console.error('API Error, falling back to mock data:', err);
     // Fallback to previously used combined mock
     const [analyticsData, dashboardData] = await Promise.all([
       getTeacherAnalyticsData(),
@@ -585,6 +734,7 @@ export const api = {
   getTeacherEngagement,
   getStudentAnalyticsData,
   getTeacherAnalyticsData,
+  getTeacherAnalyticsAPI, // New real API function
   getStudentsData,
   getDashboardData,
   getTeacherAnalyticsPageData, // Use this for the main page
@@ -593,6 +743,7 @@ export const api = {
   // Real API functions
   getSubjects,
   getUnits,
+  updateSubjectGoals,
 };
 
 export default api;
