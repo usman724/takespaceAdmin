@@ -15,7 +15,10 @@ const TeacherEngagementPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const [engagementData, setEngagementData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [subjects, setSubjects] = useState([]);
+  const [subjectOptions, setSubjectOptions] = useState(['All subjects']);
+  const [loading, setLoading] = useState(true); // initial page loader only
+  const [barsLoading, setBarsLoading] = useState(false); // loader for bars section on refetch
   const [activeTab, setActiveTab] = useState('teacherEngagement');
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [filters, setFilters] = useState({
@@ -26,10 +29,10 @@ const TeacherEngagementPage = () => {
   });
 
   const filterOptions = {
-    grade: ['All Grade', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7'],
-    subject: ['All subjects', 'Math', 'Science', 'English', 'Geography'],
-    dateRange: ['Last 30 days', 'Last 7 days', 'Last 90 days', 'Last year'],
-    teachers: ['All', 'Active only', 'Inactive only']
+    grade: ['All Grade', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+    subject: subjectOptions,
+    dateRange: ['Last 30 days', 'Last 7 days', 'All time', 'Last year', 'Today', 'Yesterday'],
+    teachers: ['All']
   };
 
   const filterWidths = {
@@ -40,19 +43,93 @@ const TeacherEngagementPage = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const init = async () => {
       try {
-        const data = await api.getTeacherEngagementData();
-        setEngagementData(data);
-      } catch (error) {
-        console.error('Error fetching engagement data:', error);
+        // load subjects for subject filter options
+        const subjectsRes = await api.getSubjects();
+        const subjectNames = subjectsRes?.data?.map(s => s.name) || [];
+        setSubjects(subjectsRes?.data || []);
+        setSubjectOptions(['All subjects', ...subjectNames]);
+      } catch (e) {
+        console.warn('Failed to load subjects for filter:', e);
       } finally {
-        setLoading(false);
+        // trigger first fetch with full page loader
+        await fetchEngagement(true);
       }
     };
-
-    fetchData();
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const mapDateRangeToApi = (label) => {
+    const map = {
+      'Last 30 days': '30d',
+      'Last 7 days': '7d',
+      'All time': 'all_time',
+      'Last year': 'last_year',
+      'Today': 'today',
+      'Yesterday': 'yesterday'
+    };
+    return map[label] || '30d';
+  };
+
+  const mapGradeToId = (gradeLabel) => {
+    if (!gradeLabel || gradeLabel === 'All Grade') return null;
+    const match = gradeLabel.match(/Grade\s*(\d+)/i);
+    return match ? match[1] : null;
+  };
+
+  const mapSubjectToId = (subjectLabel) => {
+    if (!subjectLabel || subjectLabel === 'All subjects') return null;
+    const found = subjects.find(s => s.name === subjectLabel);
+    return found ? found.id : null;
+  };
+
+  const transformApiToUi = (apiJson) => {
+    // apiJson shape from user example: { statusCode, data: { total_engagement: [...], engagement_items: [...] }, error }
+    const segments = (apiJson?.data?.total_engagement || []).map(item => {
+      // map status to colors as per existing UI palette
+      const colorMap = {
+        low: '#FFFFFF',
+        medium: '#398AC8',
+        good: '#F2C94C',
+        very_good: '#103358'
+      };
+      return { percentage: Number(item.score), color: colorMap[item.status] || '#103358' };
+    });
+    const teachers = (apiJson?.data?.engagement_items || []).map(item => ({
+      name: item.teacher_name,
+      engagement: Number(item.score),
+      color: Number(item.score) === 100 ? '#103358' : '#398AC8'
+    }));
+    return { summary: { segments }, teachers };
+  };
+
+  const fetchEngagement = async (usePageLoader = false) => {
+    if (usePageLoader) {
+      setLoading(true);
+    } else {
+      setBarsLoading(true);
+    }
+    try {
+      const params = {
+        dateRange: mapDateRangeToApi(filters.dateRange),
+        gradeId: mapGradeToId(filters.grade),
+        subjectId: mapSubjectToId(filters.subject)
+      };
+      const apiJson = await api.getTeacherEngagement(params);
+      setEngagementData(transformApiToUi(apiJson));
+    } catch (error) {
+      console.error('Error fetching engagement data:', error);
+      setEngagementData({ summary: { segments: [] }, teachers: [] });
+    } finally {
+      if (usePageLoader) {
+        setLoading(false);
+      } else {
+        setBarsLoading(false);
+      }
+    }
+  };
 
   // Track screen size for responsive tweaks (mobile-first)
   useEffect(() => {
@@ -67,8 +144,13 @@ const TeacherEngagementPage = () => {
       ...prev,
       [filterType]: value
     }));
-    // Here you can add API call to fetch filtered data
   };
+
+  useEffect(() => {
+    // refetch on any relevant filter change
+    fetchEngagement(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.grade, filters.subject, filters.dateRange]);
 
   const handleTabChange = (tabKey) => {
     const routeMap = {
@@ -305,15 +387,21 @@ const EngagementBar = ({ teacher, isSummary = false, isSmallScreen = false }) =>
             />
           </div>
 
-          {/* Summary Engagement Bar */}
-          <SummaryBar segments={engagementData?.summary?.segments || []} />
-
-          {/* Individual Teacher Engagement */}
-          <div>
-            {engagementData?.teachers?.map((teacher, index) => (
-              <EngagementBar key={index} teacher={teacher} isSmallScreen={isSmallScreen} />
-            ))}
-          </div>
+          {/* Summary Engagement and Bars Section */}
+          {barsLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="text-[#103358]">{t('loading')}</div>
+            </div>
+          ) : (
+            <>
+              <SummaryBar segments={engagementData?.summary?.segments || []} />
+              <div>
+                {engagementData?.teachers?.map((teacher, index) => (
+                  <EngagementBar key={index} teacher={teacher} isSmallScreen={isSmallScreen} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </Layout>
     </I18nProvider>

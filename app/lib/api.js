@@ -521,8 +521,22 @@ const getUnits = async (subjectId, grade = null) => {
 // Learning page
 const getLearningData = async () => fetcher(mockData.learning);
 
-// Teacher Engagement
-const getTeacherEngagementData = async () => fetcher(mockData.teacherEngagement);
+// Teacher Engagement (real API)
+// filters: { dateRange: '30d'|'7d'|'all_time'|'last_year'|'today'|'yesterday', gradeId?: string|number, subjectId?: string|number }
+const getTeacherEngagement = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.dateRange) params.set('date_range', filters.dateRange);
+    if (filters.gradeId) params.set('grade', String(filters.gradeId));
+    if (filters.subjectId) params.set('subject', String(filters.subjectId));
+    const url = `${API_BASE_URL}/admin/teacher-engagement/?${params.toString()}`;
+    const data = await apiRequest(url);
+    return data;
+  } catch (error) {
+    console.error('Error fetching teacher engagement:', error);
+    throw error;
+  }
+};
 
 // Student Analytics
 const getStudentAnalyticsData = async () => fetcher(mockData.studentAnalytics);
@@ -568,7 +582,7 @@ const getStudentsPageData = async () => fetcher(mockData.studentsPage);
 
 export const api = {
   getLearningData,
-  getTeacherEngagementData,
+  getTeacherEngagement,
   getStudentAnalyticsData,
   getTeacherAnalyticsData,
   getStudentsData,

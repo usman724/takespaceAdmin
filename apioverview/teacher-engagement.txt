@@ -1,0 +1,58 @@
+Endpoint: /api/v1/admin/teacher-engagement/
+Method: GET
+Auth: Bearer JWT (Authorization: Bearer <token>)
+Content-Type: application/json
+
+Query Parameters:
+- date_range (string, optional, default=30d)
+  Allowed: 30d | 7d | all_time | last_year | today | yesterday
+  Description: Filter by date range window.
+- grade (string, optional)
+  Description: Filter by grade ID.
+- subject (string, optional)
+  Description: Filter by subject ID.
+
+Successful Response (200):
+- Content-Type: application/json
+- Schema reference: #/components/schemas/TeacherEngagement
+- Envelope fields:
+  - statusCode (number): HTTP status code
+  - data (object): Payload
+    - total_engagement (array): Distribution of engagement levels
+      - item (object)
+        - status (string): One of low | medium | good | very_good
+        - score (string): Percent or score value as string
+    - engagement_items (array): Per-teacher engagement scores
+      - item (object)
+        - teacher_name (string)
+        - score (string)
+  - error (nullable): Error details when not null
+
+Example cURL:
+curl 'https://dev.takespace.com/api/v1/admin/teacher-engagement/?date_range=all_time&grade=2&subject=5' \
+  -H 'Authorization: Bearer <JWT>' \
+  -H 'accept: application/json'
+
+Example 200 Response:
+{
+  "statusCode": 200,
+  "data": {
+    "total_engagement": [
+      { "status": "low", "score": "10" },
+      { "status": "medium", "score": "20" },
+      { "status": "good", "score": "30" },
+      { "status": "very_good", "score": "40" }
+    ],
+    "engagement_items": [
+      { "teacher_name": "John Doe", "score": "25" },
+      { "teacher_name": "Jane Doe", "score": "50" },
+      { "teacher_name": "Adam Smith", "score": "75" },
+      { "teacher_name": "Barrack Obama", "score": "100" }
+    ]
+  },
+  "error": null
+}
+
+Notes:
+- Requires valid JWT; unauthenticated requests will be rejected.
+- If no filters are supplied, defaults to date_range=30d.
