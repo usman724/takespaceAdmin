@@ -21,6 +21,7 @@ const StudentAnalyticsPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [activeTab, setActiveTab] = useState('studentAnalytics');
   const [isWeeklyAverage, setIsWeeklyAverage] = useState(true);
   const [filters, setFilters] = useState({
@@ -229,6 +230,7 @@ const StudentAnalyticsPage = () => {
         console.error('Error fetching analytics data:', error);
       } finally {
         setLoading(false);
+        if (initialLoad) setInitialLoad(false);
       }
     };
 
@@ -333,7 +335,7 @@ const StudentAnalyticsPage = () => {
     if (target) router.push(target);
   };
 
-  if (loading) {
+  if (loading && initialLoad) {
     return (
       <I18nProvider>
         <Layout showSidebar={false}>
@@ -442,7 +444,12 @@ const StudentAnalyticsPage = () => {
           </div>
 
           {/* Bar Chart */}
-          <div className="overflow-x-hidden">
+          <div className="relative overflow-x-hidden">
+          {loading && !initialLoad && (
+            <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
+              <div className="text-[#103358]">Loading…</div>
+            </div>
+          )}
           <Chart
             type="bar"
             data={chartData}
@@ -458,7 +465,12 @@ const StudentAnalyticsPage = () => {
           </div>
 
           {/* Students Table */}
-          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="relative overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          {loading && !initialLoad && (
+            <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
+              <div className="text-[#103358]">Loading…</div>
+            </div>
+          )}
           <AdvancedTable
             data={tableData}
             columns={advancedTableColumns}
