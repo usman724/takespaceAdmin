@@ -1,0 +1,71 @@
+Student Analytics API Overview
+
+Endpoint
+- GET /api/v1/admin/student-analytics/
+- Auth: Bearer JWT required in Authorization header
+- Accept: application/json
+
+Query Parameters
+- avg (string, enum: weekly, monthly) — Average aggregation. Default: weekly
+- date_range (string, enum: 30d, 7d, all_time, last_year, today, yesterday) — Time window. Default: 30d
+- grade (string, optional) — Filter by grade ID
+- subject (string, optional) — Filter by subject ID
+- teacher (string, optional) — Filter by teacher ID
+- page (integer, optional) — Pagination page number
+
+Successful Response
+- HTTP 200
+- Shape: { statusCode, data, error }
+  - statusCode (number): 200 on success
+  - error (null | object): null on success
+  - data (object):
+    - questions_answered_per_student (object):
+      - labels (string[]): Grade labels (e.g., "Grade 1", ...)
+      - data (string[]): Values per label (stringified numbers)
+      - goal (string): Goal target (stringified number)
+      - lowest_point (string): Lowest point (stringified number)
+    - students (array of object):
+      - student_name (string)
+      - teacher_names (string): Comma-separated teacher names (may be empty)
+      - year (string): Year/grade code (e.g., "A1")
+      - subjects (array of object):
+        - subject_name (string)
+        - questions_answered (string)
+        - questions_answered_per_week (string)
+        - total_time_spent (string) — e.g., "3 hrs"
+        - time_spent_per_week (string) — e.g., "0 hrs"
+
+Example Request
+curl 'https://dev.takespace.com/api/v1/admin/student-analytics/?avg=monthly&date_range=30d' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+
+Example Success (200)
+{
+  "statusCode": 200,
+  "data": {
+    "questions_answered_per_student": {
+      "labels": ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"],
+      "data": ["15", "11", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
+      "goal": "0",
+      "lowest_point": "0"
+    },
+    "students": [
+      {
+        "student_name": "John Doe",
+        "teacher_names": "",
+        "year": "B1",
+        "subjects": [
+          { "subject_name": "Math", "questions_answered": "15", "questions_answered_per_week": "0", "total_time_spent": "0 hrs", "time_spent_per_week": "0 hrs" },
+          { "subject_name": "English", "questions_answered": "15", "questions_answered_per_week": "0", "total_time_spent": "0 hrs", "time_spent_per_week": "0 hrs" }
+        ]
+      }
+    ]
+  },
+  "error": null
+}
+
+Notes
+- If no filters (grade/subject/teacher) are provided, results are aggregated across all.
+- Numeric values are returned as strings; convert to numbers in client if needed.
+- Pagination is supported via page; page size is backend-defined (not exposed here).

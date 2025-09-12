@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -31,6 +31,8 @@ const AdvancedTable = ({
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState({});
+  const scrollRef = useRef(null);
+  const [hasOverflowX, setHasOverflowX] = useState(false);
 
   const columnHelper = createColumnHelper();
 
@@ -78,6 +80,19 @@ const AdvancedTable = ({
     setGlobalFilter(e.target.value);
   };
 
+  // Detect horizontal overflow to conditionally show progress bar
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (scrollRef.current) {
+        const el = scrollRef.current;
+        setHasOverflowX(el.scrollWidth > el.clientWidth);
+      }
+    };
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [data, columns, table.getHeaderGroups]);
+
   return (
     <div className={`bg-white rounded-[20px] shadow-[0px_2px_6px_rgba(13,10,44,0.08)] overflow-hidden ${className}`}>
       {/* Table Header */}
@@ -114,7 +129,7 @@ const AdvancedTable = ({
       </div>
 
       {/* Table with horizontal scroll */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" ref={scrollRef}>
         <table className="w-full min-w-full md:min-w-[900px] lg:min-w-[1200px] table-fixed">
           <thead>
             {multiLevelHeaders && headerGroups ? (
@@ -202,16 +217,7 @@ const AdvancedTable = ({
             </div>
           )}
 
-          {/* Progress bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div 
-              className="h-2 rounded-full" 
-              style={{ 
-                width: '30%',
-                backgroundColor: '#398AC8'
-              }}
-            />
-          </div>
+        
 
           {/* Summary Stats */}
           {summaryStats && (

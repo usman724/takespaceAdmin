@@ -16,6 +16,10 @@ const StudentAnalyticsPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('studentAnalytics');
   const [isWeeklyAverage, setIsWeeklyAverage] = useState(true);
@@ -40,13 +44,13 @@ const StudentAnalyticsPage = () => {
     teachers: '172px'
   };
 
-  // Chart data
+  // Derived chart data from API
   const chartData = {
-    labels: ['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8', 'Grade9', 'Grade10'],
+    labels: analyticsData?.data?.questions_answered_per_student?.labels || [],
     datasets: [
       {
         label: 'Questions Answered',
-        data: [330, 470, 320, 460, 340, 330, 250, 390, 200, 180],
+        data: (analyticsData?.data?.questions_answered_per_student?.data || []).map(v => Number(v) || 0),
         backgroundColor: '#103358',
         borderRadius: 4,
         barThickness: 32,
@@ -64,117 +68,23 @@ const StudentAnalyticsPage = () => {
     },
   };
 
-  // Table data
-  const tableData = [
-    {
-      id: 1,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 2,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 3,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 4,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 5,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 6,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 7,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 8,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    },
-    {
-      id: 9,
-      studentName: 'Student Name',
-      teachers: 'Doctor Alex, Alya Os..',
-      year: 'P2',
-      mathQuestionsAnswered: '14 030',
-      mathQuestionsPerWeek: '328',
-      mathTimeSpent: '99 hrs 3 min',
-      mathTimePerWeek: '2 hr 19 min',
-      mathQuestionsAnswered2: '11 593',
-      mathQuestionsPerWeek2: '271'
-    }
-  ];
+  // Table data derived from API students
+  const tableData = (students || []).map((s, idx) => {
+    const subjectByName = Object.fromEntries((s.subjects || []).map(sub => [sub.subject_name, sub]));
+    const math = subjectByName['Math'] || {};
+    return {
+      id: idx + 1,
+      studentName: s.student_name || '',
+      teachers: s.teacher_names || '',
+      year: s.year || '',
+      mathQuestionsAnswered: math.questions_answered || '',
+      mathQuestionsPerWeek: math.questions_answered_per_week || '',
+      mathTimeSpent: math.total_time_spent || '',
+      mathTimePerWeek: math.time_spent_per_week || '',
+      mathQuestionsAnswered2: math.questions_answered || '',
+      mathQuestionsPerWeek2: math.questions_answered_per_week || ''
+    };
+  });
 
   // Table columns configuration for multi-level headers
   const tableColumns = [
@@ -299,9 +209,22 @@ const StudentAnalyticsPage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const data = await api.getStudentAnalyticsData();
+        // Reset pagination when filters or toggle change
+        const initialPage = 1;
+        const data = await api.getStudentAnalyticsAPI({
+          avg: isWeeklyAverage ? 'weekly' : 'monthly',
+          dateRange: filters.dateRange,
+          grade: filters.grade,
+          subject: filters.subject,
+          page: initialPage
+        });
         setAnalyticsData(data);
+        const received = data?.data?.students || [];
+        setStudents(received.slice(0, 50));
+        setPage(1);
+        setHasMore(received.length > 50);
       } catch (error) {
         console.error('Error fetching analytics data:', error);
       } finally {
@@ -310,7 +233,88 @@ const StudentAnalyticsPage = () => {
     };
 
     fetchData();
-  }, []);
+  }, [isWeeklyAverage, filters.grade, filters.subject, filters.dateRange]);
+
+  // Load more handler (client-side first, then API page++)
+  const handleLoadMore = async () => {
+    // Try to use any remaining items from latest API response first
+    if (analyticsData?.data?.students) {
+      const currentAll = analyticsData.data.students;
+      const nextSliceEnd = (students.length + 50);
+      if (nextSliceEnd <= currentAll.length) {
+        setStudents(currentAll.slice(0, nextSliceEnd));
+        setHasMore(nextSliceEnd < currentAll.length);
+        return;
+      }
+    }
+
+    // If we exhausted local buffer, request next page from API
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const data = await api.getStudentAnalyticsAPI({
+        avg: isWeeklyAverage ? 'weekly' : 'monthly',
+        dateRange: filters.dateRange,
+        grade: filters.grade,
+        subject: filters.subject,
+        page: nextPage
+      });
+      const received = data?.data?.students || [];
+      if (received.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setStudents(prev => [...prev, ...received].slice(0, prev.length + received.length));
+      setPage(nextPage);
+      setHasMore(received.length >= 50);
+    } catch (e) {
+      console.error('Failed to load more students:', e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Footer summary stats computed from current table data (Math only)
+  const parseNumber = (val) => {
+    if (typeof val === 'number') return val;
+    if (!val) return 0;
+    const n = String(val).replace(/[^0-9.-]/g, '');
+    return Number(n || 0);
+  };
+  const parseTimeToMinutes = (str) => {
+    if (!str) return 0;
+    const s = String(str).toLowerCase();
+    const hrMatch = s.match(/(\d+)\s*hr|hrs/);
+    const hrs = hrMatch ? parseInt(hrMatch[1], 10) : (s.includes('hr') ? parseInt(s, 10) || 0 : 0);
+    const minMatch = s.match(/(\d+)\s*min/);
+    const mins = minMatch ? parseInt(minMatch[1], 10) : 0;
+    // Also support formats like "3 hrs" exactly
+    const simpleHr = s.match(/(\d+)\s*hrs?/);
+    const fallbackHrs = simpleHr ? parseInt(simpleHr[1], 10) : 0;
+    return (hrs || fallbackHrs) * 60 + mins;
+  };
+  const minutesToHrsMins = (mins) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h} hrs ${m} mins`;
+  };
+  const mathTotals = students.reduce((acc, s) => {
+    const math = (s.subjects || []).find(sub => sub.subject_name === 'Math') || {};
+    acc.questions += parseNumber(math.questions_answered);
+    acc.questionsPerWeek.push(parseNumber(math.questions_answered_per_week));
+    acc.timeTotal += parseTimeToMinutes(math.total_time_spent);
+    acc.timePerWeek.push(parseTimeToMinutes(math.time_spent_per_week));
+    return acc;
+  }, { questions: 0, questionsPerWeek: [], timeTotal: 0, timePerWeek: [] });
+  const avg = (arr) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+  const summaryStats = [
+    { label: 'Total', value: String(mathTotals.questions) },
+    { label: 'Average', value: String(avg(mathTotals.questionsPerWeek)) },
+    { label: 'Total', value: minutesToHrsMins(mathTotals.timeTotal) },
+    { label: 'Average', value: minutesToHrsMins(avg(mathTotals.timePerWeek)) },
+    { label: 'Total', value: String(mathTotals.questions) },
+    { label: 'Average', value: String(avg(mathTotals.questionsPerWeek)) }
+  ];
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
@@ -446,9 +450,9 @@ const StudentAnalyticsPage = () => {
             title="Question Answered Per Student"
             height="280px"
             showGoalLine={true}
-            goalValue={500}
-            showAverage={true}
-            averageValue={157}
+            goalValue={Number(analyticsData?.data?.questions_answered_per_student?.goal) || 0}
+            showAverage={false}
+            averageValue={0}
             className="mb-8"
           />
           </div>
@@ -458,30 +462,27 @@ const StudentAnalyticsPage = () => {
           <AdvancedTable
             data={tableData}
             columns={advancedTableColumns}
-            title="161 Students"
+            title={`${students.length} Students`}
             searchPlaceholder="Search"
             showPagination={false}
             multiLevelHeaders={true}
             headerGroups={tableColumns}
             footerContent={
-              <button 
-                className="px-6 py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
-                style={{
-                  backgroundColor: '#103358',
-                  fontFamily: 'Poppins, sans-serif'
-                }}
-              >
-                See 100 more →
-              </button>
+              hasMore ? (
+                <button 
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-6 py-2 rounded-lg text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+                  style={{
+                    backgroundColor: '#103358',
+                    fontFamily: 'Poppins, sans-serif'
+                  }}
+                >
+                  {loadingMore ? 'Loading…' : 'See 50 more →'}
+                </button>
+              ) : null
             }
-            summaryStats={[
-              { label: 'Total', value: '773 307' },
-              { label: 'Average', value: '112' },
-              { label: 'Total', value: '10554 hrs 58 mins' },
-              { label: 'Average', value: '1 hr 32 mins' },
-              { label: 'Total', value: '223 665' },
-              { label: 'Average', value: '33' }
-            ]}
+            summaryStats={summaryStats}
           />
           </div>
         </div>

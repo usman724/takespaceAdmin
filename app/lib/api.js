@@ -538,8 +538,55 @@ const getTeacherEngagement = async (filters = {}) => {
   }
 };
 
-// Student Analytics
-const getStudentAnalyticsData = async () => fetcher(mockData.studentAnalytics);
+// Student Analytics (real API)
+// filters: { avg: 'weekly'|'monthly', dateRange: '30d'|'7d'|'all_time'|'last_year'|'today'|'yesterday', grade?: 'Grade X'|'All Grade', subject?: 'Math'|'Science'|'English'|'Geography'|'All subjects', page?: number }
+const getStudentAnalyticsAPI = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    // avg
+    params.set('avg', filters.avg === 'monthly' ? 'monthly' : 'weekly');
+    // date_range mapping (accept already mapped or UI values)
+    if (filters.dateRange) {
+      const map = {
+        'Last 30 days': '30d',
+        'Last 7 days': '7d',
+        'Last 90 days': '30d',
+        'All time': 'all_time',
+        'Last year': 'last_year',
+        'Today': 'today',
+        'Yesterday': 'yesterday',
+        // already API values
+        '30d': '30d',
+        '7d': '7d',
+        'all_time': 'all_time',
+        'last_year': 'last_year',
+        'today': 'today',
+        'yesterday': 'yesterday'
+      };
+      params.set('date_range', map[filters.dateRange] || '30d');
+    } else {
+      params.set('date_range', '30d');
+    }
+    // grade mapping
+    if (filters.grade && filters.grade !== 'All Grade' && filters.grade !== 'All grades') {
+      const m = String(filters.grade).match(/Grade\s*(\d+)/);
+      if (m) params.set('grade', m[1]);
+    }
+    // subject mapping
+    if (filters.subject && filters.subject !== 'All subjects') {
+      const subjectMap = { 'Math': '1', 'Science': '2', 'English': '3', 'Geography': '4' };
+      if (subjectMap[filters.subject]) params.set('subject', subjectMap[filters.subject]);
+    }
+    if (filters.page) params.set('page', String(filters.page));
+
+    const url = `${API_BASE_URL}/admin/student-analytics/?${params.toString()}`;
+    const data = await apiRequest(url);
+    return data;
+  } catch (error) {
+    console.error('Error fetching student analytics:', error);
+    throw error;
+  }
+};
 
 // Teacher Analytics (specific charts)
 const getTeacherAnalyticsData = async () => fetcher(mockData.teacherAnalytics);
@@ -732,7 +779,7 @@ const getStudentsPageData = async () => fetcher(mockData.studentsPage);
 export const api = {
   getLearningData,
   getTeacherEngagement,
-  getStudentAnalyticsData,
+  getStudentAnalyticsAPI,
   getTeacherAnalyticsData,
   getTeacherAnalyticsAPI, // New real API function
   getStudentsData,
