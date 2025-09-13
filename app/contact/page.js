@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { toast, Toaster } from 'react-hot-toast';
 import I18nProvider from '../components/providers/I18nProvider';
 import Layout from '../components/layout/Layout';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
+import api from '../lib/api';
 
 const roleTabs = ['Parent', 'Student', 'Teacher', 'Administrator', 'Other'];
 
@@ -21,6 +23,7 @@ export default function ContactSupportPage() {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset password modals
   const [showResetEmailModal, setShowResetEmailModal] = useState(false);
@@ -44,12 +47,113 @@ export default function ContactSupportPage() {
   };
 
   const aboutOptions = [
-    { label: 'Account management', value: 'account' },
+    { label: 'Account management', value: 'account_management' },
     { label: 'Billing & subscription', value: 'billing' },
     { label: 'Technical issues', value: 'technical' },
     { label: 'Content & curriculum', value: 'content' },
     { label: 'Other', value: 'other' },
   ];
+
+  // Map role to API format
+  const getRoleForAPI = (role) => {
+    const roleMap = {
+      'Parent': 'parent',
+      'Student': 'student', 
+      'Teacher': 'teacher',
+      'Administrator': 'admin',
+      'Other': 'other'
+    };
+    return roleMap[role] || 'other';
+  };
+
+  // Form validation
+  const validateForm = () => {
+    if (!name.trim()) {
+      toast.error('Name is required');
+      return false;
+    }
+    if (!email.trim()) {
+      toast.error('Email is required');
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return false;
+    }
+    if (!username.trim()) {
+      toast.error('Username is required');
+      return false;
+    }
+    if (!phone.trim()) {
+      toast.error('Phone number is required');
+      return false;
+    }
+    if (!about) {
+      toast.error('Please select what this is about');
+      return false;
+    }
+    if (!subject.trim()) {
+      toast.error('Subject is required');
+      return false;
+    }
+    if (!description.trim()) {
+      toast.error('Description is required');
+      return false;
+    }
+    return true;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const ticketData = {
+        full_name: name.trim(),
+        username: username.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        type: 'account_management', // API only supports account_management
+        subject: subject.trim(),
+        message: description.trim(),
+        attachment: files.length > 0 ? files[0] : null // For now, only support single file
+      };
+
+      const response = await api.createSupportTicket(ticketData);
+
+      if (response.error) {
+        toast.error(response.error.message || 'Failed to submit support ticket');
+        return;
+      }
+
+      if (response.statusCode === 201) {
+        toast.success('Support ticket submitted successfully! We\'ll get back to you within 1 business day.');
+        
+        // Reset form
+        setName('');
+        setEmail('');
+        setUsername('');
+        setPhone('');
+        setAbout('');
+        setSubject('');
+        setDescription('');
+        setFiles([]);
+      } else {
+        toast.error('Failed to submit support ticket. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting support ticket:', error);
+      toast.error('An error occurred while submitting your ticket. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <I18nProvider>
@@ -128,7 +232,7 @@ export default function ContactSupportPage() {
 
               {/* Right column - form */}
               <section className="flex-1">
-                <div className="bg-white rounded-[20px] shadow-[0_0_24px_1px_rgba(0,0,0,0.09)] p-6 sm:p-10">
+                <form onSubmit={handleSubmit} className="bg-white rounded-[20px] shadow-[0_0_24px_1px_rgba(0,0,0,0.09)] p-6 sm:p-10">
                   <h2 className="text-3xl sm:text-4xl font-bold font-['Objective'] leading-tight text-[#103358]">Contact Us</h2>
                   <p className="text-[#666] mt-2 font-['Poppins']">
                     Welcome Please fill out the support form below, and our team of product experts will get back to you within 1 business day
@@ -252,9 +356,16 @@ export default function ContactSupportPage() {
                   </div>
 
                   <div className="mt-8 flex justify-end">
-                    <Button variant="primary" className="px-8 h-12">Submit</Button>
+                    <Button 
+                      type="submit"
+                      variant="primary" 
+                      className="px-8 h-12"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </Button>
                   </div>
-                </div>
+                </form>
               </section>
             </div>
           </div>
@@ -362,6 +473,30 @@ export default function ContactSupportPage() {
             </div>
           </Modal>
         </div>
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 5000,
+              style: {
+                background: '#10B981',
+                color: '#fff',
+              },
+            },
+            error: {
+              duration: 5000,
+              style: {
+                background: '#EF4444',
+                color: '#fff',
+              },
+            },
+          }}
+        />
       </Layout>
     </I18nProvider>
   );

@@ -1,0 +1,165 @@
+Support Articles API Overview
+
+Endpoint
+- Method: GET
+- Path: /api/v1/support/articles/
+- Auth: Bearer JWT (Authorization: Bearer <token>) OR No Auth (public access)
+- Content-Type: application/json
+- Tags: support
+
+Description
+Lists published support articles with pagination. This endpoint returns only articles that are marked as published (is_published=True).
+
+Query Parameters
+- page (integer, optional): Page number for pagination. Default: 1
+- page_size (integer, optional): Number of items per page. Default: 10 (not explicitly documented but standard pagination)
+
+Note: No filtering parameters are available - only published articles are returned.
+
+Request Headers
+- Authorization: Bearer <JWT_TOKEN> (optional - endpoint supports both authenticated and public access)
+- Accept: application/json
+- Content-Type: application/json
+
+Success Response (200 OK)
+- Content-Type: application/json
+- Schema: PaginatedSupportArticleList
+
+Response Structure
+{
+  "statusCode": 200,
+  "data": {
+    "count": 25,
+    "next": "http://api.example.org/api/v1/support/articles/?page=2",
+    "previous": null,
+    "results": [
+      {
+        "title": "How to Reset Your Password",
+        "content": "<p>To reset your password, follow these steps...</p>",
+        "category": "Your account",
+        "author": {
+          "first_name": "John",
+          "last_name": "Doe"
+        }
+      }
+    ]
+  },
+  "error": null
+}
+
+Response Fields
+Pagination Fields:
+- count (integer): Total number of published articles
+- next (string, nullable): URL for next page (null if last page)
+- previous (string, nullable): URL for previous page (null if first page)
+- results (array): Array of SupportArticle objects
+
+SupportArticle Object Fields:
+- title (string, required): Article title (max 200 characters)
+- content (string, required): Article content in HTML format (ProseEditorField)
+- category (string, required, read-only): Human-readable category name
+- author (object, required): SupportArticleAuthor object
+
+SupportArticleAuthor Object Fields:
+- first_name (string, required): Author's first name (max 200 characters)
+- last_name (string, required): Author's last name (max 200 characters)
+
+Available Categories
+The category field can have these predefined values:
+- "Your account"
+- "Learning"
+- "Analytics"
+- "Personal data"
+- "Teachers"
+- "Family members"
+- "Classroom and school"
+- "School administrators"
+- "Integrations"
+
+Example Request
+curl 'https://dev.takespace.com/api/v1/support/articles/?page=1' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3NzU2ODM1LCJpYXQiOjE3NTc2NzA0MzUsImp0aSI6ImNjNjQ3ZjZkZWVkZTQ4NDk4MDE4MjNhMjQ4NTkwMjUwIiwidXNlcl9pZCI6MX0.teahC5wAQEf33-3NK9dPqZ8krnDay78uFPPlJGnQf0M' \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json'
+
+Example Success Response (200)
+{
+  "statusCode": 200,
+  "data": {
+    "count": 15,
+    "next": "https://dev.takespace.com/api/v1/support/articles/?page=2",
+    "previous": null,
+    "results": [
+      {
+        "title": "Getting Started with TakeSpace",
+        "content": "<p>Welcome to TakeSpace! This guide will help you get started...</p><h2>Creating Your Account</h2><p>To create your account...</p>",
+        "category": "Your account",
+        "author": {
+          "first_name": "Sarah",
+          "last_name": "Johnson"
+        }
+      },
+      {
+        "title": "Understanding Learning Analytics",
+        "content": "<p>Learning analytics help you track student progress...</p><h2>Key Metrics</h2><p>Here are the key metrics you should focus on...</p>",
+        "category": "Analytics",
+        "author": {
+          "first_name": "Michael",
+          "last_name": "Chen"
+        }
+      },
+      {
+        "title": "Setting Up Your Classroom",
+        "content": "<p>This article will guide you through setting up your classroom...</p>",
+        "category": "Classroom and school",
+        "author": {
+          "first_name": "Emily",
+          "last_name": "Rodriguez"
+        }
+      }
+    ]
+  },
+  "error": null
+}
+
+Example Pagination Response
+{
+  "statusCode": 200,
+  "data": {
+    "count": 50,
+    "next": "https://dev.takespace.com/api/v1/support/articles/?page=3",
+    "previous": "https://dev.takespace.com/api/v1/support/articles/?page=1",
+    "results": [
+      // ... articles for page 2
+    ]
+  },
+  "error": null
+}
+
+Error Responses
+The API may return standard HTTP error responses:
+- 400 Bad Request: Invalid query parameters
+- 401 Unauthorized: Invalid or expired JWT token (if authentication required)
+- 403 Forbidden: Insufficient permissions
+- 500 Internal Server Error: Server-side error
+
+Example Error Response (500)
+{
+  "statusCode": 500,
+  "data": {},
+  "error": {
+    "code": 500,
+    "message": "Internal server error",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+Notes
+- Only published articles (is_published=True) are returned
+- The content field contains HTML markup from the ProseEditorField
+- Authentication is optional - the endpoint supports both authenticated and public access
+- Pagination follows standard REST API patterns with count, next, previous, and results fields
+- Category names are human-readable strings, not codes
+- Author information is always included for each article
+- No filtering or search parameters are available - all published articles are returned
+- The API uses standard HTTP status codes and follows the envelope pattern with statusCode, data, and error fields

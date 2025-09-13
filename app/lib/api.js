@@ -479,6 +479,7 @@ const apiRequest = async (url, options = {}) => {
       'Authorization': `Bearer ${FIXED_TOKEN}`,
       'accept': 'application/json',
       'Content-Type': 'application/json',
+      'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
       ...options.headers
     },
     ...options
@@ -855,6 +856,82 @@ export const api = {
     } catch (error) {
       console.error('Error assigning subjects to teacher:', error);
       return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
+    }
+  },
+
+  // Support Articles API
+  async getSupportArticles(page = 1) {
+    try {
+      const url = `${API_BASE_URL}/support/articles/?page=${page}`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching support articles:', error);
+      return { data: { count: 0, results: [] }, error: error.message };
+    }
+  },
+
+  // Support Tickets API
+  async createSupportTicket(ticketData) {
+    try {
+      const url = `${API_BASE_URL}/support/tickets/`;
+      
+      // Check if there's a file attachment
+      if (ticketData.attachment && ticketData.attachment instanceof File) {
+        // Use FormData for file uploads
+        const formData = new FormData();
+        formData.append('full_name', ticketData.full_name);
+        formData.append('username', ticketData.username);
+        formData.append('email', ticketData.email);
+        formData.append('phone', ticketData.phone);
+        formData.append('type', ticketData.type);
+        formData.append('subject', ticketData.subject);
+        formData.append('message', ticketData.message);
+        formData.append('attachment', ticketData.attachment);
+        
+        // For FormData, we need to make a direct fetch call to avoid Content-Type issues
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${FIXED_TOKEN}`,
+            'accept': 'application/json',
+            'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
+            // Don't set Content-Type for FormData - let browser set it with boundary
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data;
+      } else {
+        // Use JSON for regular requests
+        const data = await apiRequest(url, {
+          method: 'POST',
+          body: JSON.stringify(ticketData),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        return data;
+      }
+    } catch (error) {
+      console.error('Error creating support ticket:', error);
+      return { error: { message: String(error?.message || 'Failed to create support ticket') } };
+    }
+  },
+
+  async getSupportTicket(ticketId) {
+    try {
+      const url = `${API_BASE_URL}/support/tickets/${ticketId}/`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching support ticket:', error);
+      return { error: { message: String(error?.message || 'Failed to fetch support ticket') } };
     }
   },
 };

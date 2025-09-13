@@ -6,28 +6,52 @@ import Layout from '../components/layout/Layout';
 import I18nProvider from '../components/providers/I18nProvider';
 import '../lib/i18n';
 import Image from 'next/image';
+import api from '../lib/api';
 
 const HelpPage = () => {
     const { t } = useTranslation();
-    const [activeCategory, setActiveCategory] = useState('Your Account');
+    const [activeCategory, setActiveCategory] = useState('Your account');
     const [showAllArticles, setShowAllArticles] = useState(false);
     const [articlesData, setArticlesData] = useState({});
     const [loading, setLoading] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [error, setError] = useState(null);
 
     // Load articles data from API
     useEffect(() => {
         const loadArticlesData = async () => {
             try {
-                const response = await fetch('/api/articles');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch articles');
+                setLoading(true);
+                setError(null);
+                const response = await api.getSupportArticles(1);
+                
+                if (response.error) {
+                    throw new Error(response.error);
                 }
-                const data = await response.json();
-                setArticlesData(data);
+
+                // Transform API response to match expected format
+                const transformedData = {};
+                if (response.data && response.data.results) {
+                    response.data.results.forEach(article => {
+                        const category = article.category;
+                        if (!transformedData[category]) {
+                            transformedData[category] = [];
+                        }
+                        transformedData[category].push({
+                            id: article.title.toLowerCase().replace(/\s+/g, '-'),
+                            title: article.title,
+                            content: article.content,
+                            category: article.category,
+                            author: article.author
+                        });
+                    });
+                }
+                
+                setArticlesData(transformedData);
                 setLoading(false);
             } catch (error) {
                 console.error('Error loading articles:', error);
+                setError(error.message);
                 setLoading(false);
             }
         };
@@ -48,6 +72,28 @@ const HelpPage = () => {
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#398AC8] mx-auto mb-4"></div>
                             <p className="text-[#103358] font-['Poppins']">Loading help articles...</p>
+                        </div>
+                    </div>
+                </Layout>
+            </I18nProvider>
+        );
+    }
+
+    if (error) {
+        return (
+            <I18nProvider>
+                <Layout>
+                    <div className="min-h-screen bg-white flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="text-red-500 text-xl mb-4">⚠️</div>
+                            <p className="text-[#103358] font-['Poppins'] mb-4">Failed to load help articles</p>
+                            <p className="text-gray-500 font-['Poppins'] text-sm">{error}</p>
+                            <button 
+                                onClick={() => window.location.reload()} 
+                                className="mt-4 bg-[#398AC8] text-white px-4 py-2 rounded-lg font-['Poppins'] hover:bg-[#2F71A8] transition-colors"
+                            >
+                                Try Again
+                            </button>
                         </div>
                     </div>
                 </Layout>
@@ -190,18 +236,26 @@ const HelpPage = () => {
                                                 Articles
                                             </h3>
                                             
-                                            <div className="space-y-6">
-                                                {displayedArticles.map((article, index) => (
-                                                    <div key={article.id || index}>
-                                                        <button className="text-left w-full text-[#398AC8] font-medium text-lg leading-7 font-['Poppins'] hover:text-[#2F71A8] transition-colors">
-                                                            {article.title}
-                                                        </button>
-                                                        {index < displayedArticles.length - 1 && (
-                                                            <div className="w-full h-px bg-[#D9E7EF] mt-6"></div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            {displayedArticles.length > 0 ? (
+                                                <div className="space-y-6">
+                                                    {displayedArticles.map((article, index) => (
+                                                        <div key={article.id || index}>
+                                                            <button className="text-left w-full text-[#398AC8] font-medium text-lg leading-7 font-['Poppins'] hover:text-[#2F71A8] transition-colors">
+                                                                {article.title}
+                                                            </button>
+                                                            {index < displayedArticles.length - 1 && (
+                                                                <div className="w-full h-px bg-[#D9E7EF] mt-6"></div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8">
+                                                    <p className="text-gray-500 font-['Poppins'] text-lg">
+                                                        No articles available for this category yet.
+                                                    </p>
+                                                </div>
+                                            )}
 
                                             {/* See all articles button */}
                                             {hasMoreArticles && !showAllArticles && (

@@ -1,0 +1,334 @@
+Support Tickets API Overview
+
+Base Endpoint: /api/v1/support/tickets/
+
+Available Actions:
+- POST /api/v1/support/tickets/ - Create a new support ticket
+- GET /api/v1/support/tickets/{id}/ - Retrieve a specific support ticket (requires authentication and ownership)
+
+================================================================================
+1. CREATE SUPPORT TICKET
+================================================================================
+
+Endpoint: POST /api/v1/support/tickets/
+Authentication: Bearer JWT (Authorization: Bearer <token>)
+Content-Type: application/json, application/x-www-form-urlencoded, or multipart/form-data
+Tags: support
+
+Description:
+Creates a new support ticket. Users can submit tickets for account management issues and other support requests. If the user is authenticated, the user field is automatically set.
+
+Request Headers:
+- Authorization: Bearer <JWT_TOKEN> (required)
+- Accept: application/json
+- Content-Type: application/json (or multipart/form-data for file uploads)
+
+Payload (Request Body):
+{
+  "full_name": "John Doe",
+  "username": "johndoe123", 
+  "email": "john.doe@example.com",
+  "phone": "+1234567890",
+  "type": "account_management",
+  "subject": "Password Reset Issue",
+  "message": "I'm having trouble resetting my password. When I click the reset link, it says the link has expired.",
+  "attachment": null
+}
+
+Field Descriptions:
+
+Required Fields:
+- full_name (string, max 100 chars): Full name of the person submitting the ticket
+- username (string, max 50 chars): Username of the person submitting the ticket
+- email (string, max 254 chars): Valid email address for contact
+- phone (string, max 15 chars): Phone number for contact
+- type (string): Ticket type - currently only "account_management" is supported
+- subject (string, max 100 chars): Brief subject line for the ticket
+- message (string, max 1000 chars): Detailed description of the issue
+
+Optional Fields:
+- attachment (string, nullable): File upload path for attachments (uploaded to "support/ticket_attachments/")
+
+Type Options:
+- "account_management" - Account Management issues
+
+Success Response (201 Created):
+Content-Type: application/json
+Schema: SupportTicket
+
+{
+  "statusCode": 201,
+  "data": {
+    "id": 123,
+    "full_name": "John Doe",
+    "username": "johndoe123",
+    "email": "john.doe@example.com", 
+    "phone": "+1234567890",
+    "type": "account_management",
+    "subject": "Password Reset Issue",
+    "message": "I'm having trouble resetting my password. When I click the reset link, it says the link has expired.",
+    "attachment": null
+  },
+  "error": null
+}
+
+Error Response (400 Bad Request):
+{
+  "statusCode": 400,
+  "data": {},
+  "error": {
+    "code": 400,
+    "message": {
+      "email": ["Enter a valid email address."],
+      "message": ["This field is required."],
+      "full_name": ["This field is required."],
+      "username": ["This field is required."],
+      "phone": ["This field is required."],
+      "type": ["This field is required."],
+      "subject": ["This field is required."]
+    },
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+Error Response (401 Unauthorized):
+{
+  "statusCode": 401,
+  "data": {},
+  "error": {
+    "code": 401,
+    "message": "Authentication credentials were not provided.",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+================================================================================
+2. RETRIEVE SUPPORT TICKET
+================================================================================
+
+Endpoint: GET /api/v1/support/tickets/{id}/
+Authentication: Bearer JWT (Authorization: Bearer <token>)
+Content-Type: application/json
+Tags: support
+
+Description:
+Retrieves a specific support ticket by ID. Users can only retrieve tickets they created. Requires authentication.
+
+Path Parameters:
+- id (string, required): The unique identifier of the support ticket
+
+Request Headers:
+- Authorization: Bearer <JWT_TOKEN> (required)
+- Accept: application/json
+
+Success Response (200 OK):
+Content-Type: application/json
+Schema: SupportTicket
+
+{
+  "statusCode": 200,
+  "data": {
+    "id": 123,
+    "full_name": "John Doe",
+    "username": "johndoe123",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890", 
+    "type": "account_management",
+    "subject": "Password Reset Issue",
+    "message": "I'm having trouble resetting my password. When I click the reset link, it says the link has expired.",
+    "attachment": "http://api.example.com/media/support/ticket_attachments/document.pdf"
+  },
+  "error": null
+}
+
+Error Response (401 Unauthorized):
+{
+  "statusCode": 401,
+  "data": {},
+  "error": {
+    "code": 401,
+    "message": "Authentication credentials were not provided.",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+Error Response (403 Forbidden - Not ticket owner):
+{
+  "statusCode": 403,
+  "data": {},
+  "error": {
+    "code": 403,
+    "message": "You do not have permission to perform this action.",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+Error Response (404 Not Found):
+{
+  "statusCode": 404,
+  "data": {},
+  "error": {
+    "code": 404,
+    "message": "Not found.",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+================================================================================
+3. SUPPORT TICKET SCHEMA
+================================================================================
+
+SupportTicket Object:
+- id (integer, read-only): Unique identifier for the ticket
+- full_name (string, required, max 100): Full name of the person
+- username (string, required, max 50): Username of the person
+- email (string, required, max 254): Valid email address
+- phone (string, required, max 15): Phone number
+- type (string, required): Ticket type (SupportTicketTypeEnum)
+- subject (string, required, max 100): Subject line
+- message (string, required, max 1000): Detailed message
+- attachment (string, nullable): File upload URI
+
+SupportTicketTypeEnum:
+- "account_management" - Account Management
+
+================================================================================
+4. EXAMPLE USAGE
+================================================================================
+
+Creating a Support Ticket:
+POST /api/v1/support/tickets/
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+Content-Type: application/json
+
+{
+  "full_name": "Jane Smith",
+  "username": "janesmith",
+  "email": "jane.smith@school.edu",
+  "phone": "+1987654321",
+  "type": "account_management",
+  "subject": "Cannot Access Student Analytics",
+  "message": "I'm unable to view the student analytics dashboard. Getting a permission error when I try to access it. This started happening after the last update."
+}
+
+Response:
+{
+  "statusCode": 201,
+  "data": {
+    "id": 124,
+    "full_name": "Jane Smith",
+    "username": "janesmith",
+    "email": "jane.smith@school.edu",
+    "phone": "+1987654321",
+    "type": "account_management",
+    "subject": "Cannot Access Student Analytics",
+    "message": "I'm unable to view the student analytics dashboard. Getting a permission error when I try to access it. This started happening after the last update.",
+    "attachment": null
+  },
+  "error": null
+}
+
+Retrieving a Support Ticket:
+GET /api/v1/support/tickets/124/
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+
+Response:
+{
+  "statusCode": 200,
+  "data": {
+    "id": 124,
+    "full_name": "Jane Smith",
+    "username": "janesmith",
+    "email": "jane.smith@school.edu",
+    "phone": "+1987654321",
+    "type": "account_management",
+    "subject": "Cannot Access Student Analytics",
+    "message": "I'm unable to view the student analytics dashboard. Getting a permission error when I try to access it. This started happening after the last update.",
+    "attachment": null
+  },
+  "error": null
+}
+
+Creating a Support Ticket with File Attachment:
+POST /api/v1/support/tickets/
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+Content-Type: multipart/form-data
+
+Form Data:
+- full_name: "Mike Johnson"
+- username: "mikej"
+- email: "mike.johnson@example.com"
+- phone: "+1555123456"
+- type: "account_management"
+- subject: "Login Issue with Screenshot"
+- message: "I'm getting an error when trying to log in. I've attached a screenshot of the error message."
+- attachment: [file upload: error_screenshot.png]
+
+Response:
+{
+  "statusCode": 201,
+  "data": {
+    "id": 125,
+    "full_name": "Mike Johnson",
+    "username": "mikej",
+    "email": "mike.johnson@example.com",
+    "phone": "+1555123456",
+    "type": "account_management",
+    "subject": "Login Issue with Screenshot",
+    "message": "I'm getting an error when trying to log in. I've attached a screenshot of the error message.",
+    "attachment": "http://api.example.com/media/support/ticket_attachments/error_screenshot.png"
+  },
+  "error": null
+}
+
+================================================================================
+5. ERROR HANDLING
+================================================================================
+
+Common Error Scenarios:
+
+1. Missing Required Fields (400):
+   - Missing any of: full_name, username, email, phone, type, subject, message
+   - Invalid email format
+   - Field length exceeds maximum limits
+
+2. Authentication Issues (401):
+   - Missing Authorization header
+   - Invalid or expired JWT token
+   - Malformed token
+
+3. Authorization Issues (403):
+   - User trying to access ticket they didn't create
+   - Insufficient permissions
+
+4. Not Found (404):
+   - Ticket ID doesn't exist
+   - Ticket was deleted
+
+5. Server Errors (500):
+   - Internal server error
+   - Database connection issues
+
+Field Validation Rules:
+- full_name: Required, max 100 characters
+- username: Required, max 50 characters  
+- email: Required, valid email format, max 254 characters
+- phone: Required, max 15 characters
+- type: Required, must be "account_management"
+- subject: Required, max 100 characters
+- message: Required, max 1000 characters
+- attachment: Optional, file upload to "support/ticket_attachments/"
+
+================================================================================
+6. NOTES
+================================================================================
+
+- If user is authenticated during ticket creation, the user field is automatically set
+- Users can only retrieve tickets they created (ownership-based access control)
+- File attachments are uploaded to "support/ticket_attachments/" directory
+- The API uses the standard response format with statusCode, data, and error fields
+- Currently only "account_management" ticket type is supported
+- All timestamps are in ISO 8601 format (UTC)
+- JWT tokens must be valid and not expired
+- File uploads support multipart/form-data content type
+- Maximum file size limits may apply (not specified in API documentation)
