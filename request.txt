@@ -1,0 +1,18 @@
+API Endpoints Needed:
+
+1. File Upload Endpoint for Ticket Creation
+   - Endpoint: POST /api/tickets/upload
+   - Purpose: Allow users to upload files and get back file URLs
+   - Returns: File URL that can be used in ticket creation requests
+
+2. Username Recovery Endpoint
+   - Endpoint: POST /api/auth/recover-username
+   - Purpose: Allow users to recover their username via email
+   - Returns: Username recovery confirmation or error message
+
+3. Password Recovery Endpoint
+   - Endpoint: POST /api/auth/recover-password
+   - Purpose: Allow users to reset their password via email
+   - Returns: Password reset confirmation or error message
+
+Additional endpoints will be added as requested.

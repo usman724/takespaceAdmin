@@ -1,13 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { api } from '../../../lib/api';
 
 const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEditSubjects }) => {
     const { t } = useTranslation();
     const [showStudentList, setShowStudentList] = useState(false);
     const [showSubjectEdit, setShowSubjectEdit] = useState(false);
     const [selectedSubjects, setSelectedSubjects] = useState(teacher?.subjects || ['Maths']);
+    const [students, setStudents] = useState([]);
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [studentsError, setStudentsError] = useState(null);
 
     const handleSubjectChange = (subject) => {
         setSelectedSubjects(prev => {
@@ -22,6 +26,33 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
         onEditSubjects(selectedSubjects);
         setShowSubjectEdit(false);
     };
+
+    // Fetch students when teacher changes or modal opens
+    useEffect(() => {
+        const fetchStudents = async () => {
+            if (teacher?.id && isOpen) {
+                setLoadingStudents(true);
+                setStudentsError(null);
+                try {
+                    const response = await api.getTeacherRoster(teacher.id);
+                    if (response.error) {
+                        setStudentsError(response.error.message);
+                        setStudents([]);
+                    } else {
+                        setStudents(response.data || []);
+                    }
+                } catch (error) {
+                    console.error('Error fetching students:', error);
+                    setStudentsError('Failed to load students');
+                    setStudents([]);
+                } finally {
+                    setLoadingStudents(false);
+                }
+            }
+        };
+
+        fetchStudents();
+    }, [teacher?.id, isOpen]);
 
     if (!isOpen) return null;
 
@@ -134,22 +165,22 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                     Class
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                    Not enrolled in classes
-                                </span>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-between">
                                     <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                        {teacher?.studentCount || '36'} Students
+                                        Not enrolled in classes
                                     </span>
-                                    <button 
-                                        onClick={() => setShowStudentList(true)}
-                                        className="text-[12px] font-normal text-[#2F80ED] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] cursor-pointer"
-                                    >
-                                        View All
-                                    </button>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
+                                            {loadingStudents ? 'Loading...' : `${students.length} Students`}
+                                        </span>
+                                        <button 
+                                            onClick={() => setShowStudentList(true)}
+                                            className="text-[12px] font-normal text-[#2F80ED] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] cursor-pointer"
+                                        >
+                                            View All
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
                         </div>
 
                         {/* Account History Section */}
@@ -282,7 +313,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                         {teacher?.name || 'Alya , Osman'}'s Roster
                                     </h2>
                                     <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']">
-                                        {teacher?.name || 'Alya , Osman'}'s Roster contains the following {teacher?.studentCount || '36'} students.
+                                        {teacher?.name || 'Alya , Osman'}'s Roster contains the following {students.length} students.
                                     </p>
                                 </div>
                                 <button 
@@ -303,13 +334,13 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                         Student Name
                                     </span>
                                     <span className="text-[14px] md:text-[16px] font-medium text-white leading-[24px] font-['Poppins']">
-                                        Student ID
+                                        Email
                                     </span>
                                     <span className="text-[14px] md:text-[16px] font-medium text-white leading-[24px] font-['Poppins']">
                                         Year
                                     </span>
                                     <span className="text-[14px] md:text-[16px] font-medium text-white leading-[24px] font-['Poppins']">
-                                        User Name
+                                        Username
                                     </span>
                                 </div>
                             </div>
@@ -317,29 +348,44 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                             {/* Table Content with Scroll */}
                             <div className="bg-white border border-[#E0E0E0] rounded-b-[8px] overflow-hidden">
                                 <div className="max-h-[300px] md:max-h-[400px] lg:max-h-[500px] overflow-y-auto">
-                                    {Array.from({ length: 36 }, (_, i) => ({
-                                        name: `Student ${i + 1}`,
-                                        id: `student${i + 1}@example.com`,
-                                        year: `P${i + 1}`,
-                                        username: 'glat@5stpes'
-                                    })).map((student, index) => (
-                                        <div key={index} className="flex items-center px-4 md:px-8 py-3 border-b border-[#E0E0E0] last:border-b-0 hover:bg-gray-50">
-                                            <div className="grid grid-cols-4 w-full gap-4 md:gap-8">
-                                                <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
-                                                    {student.name}
-                                                </span>
-                                                <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
-                                                    {student.id}
-                                                </span>
-                                                <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
-                                                    {student.year}
-                                                </span>
-                                                <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
-                                                    {student.username}
-                                                </span>
+                                    {loadingStudents ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="text-[14px] text-[#374151] font-['Poppins']">
+                                                Loading students...
                                             </div>
                                         </div>
-                                    ))}
+                                    ) : studentsError ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="text-[14px] text-red-500 font-['Poppins']">
+                                                {studentsError}
+                                            </div>
+                                        </div>
+                                    ) : students.length === 0 ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="text-[14px] text-[#374151] font-['Poppins']">
+                                                No students found
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        students.map((student, index) => (
+                                            <div key={student.id || index} className="flex items-center px-4 md:px-8 py-3 border-b border-[#E0E0E0] last:border-b-0 hover:bg-gray-50">
+                                                <div className="grid grid-cols-4 w-full gap-4 md:gap-8">
+                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+                                                        {student.full_name || 'N/A'}
+                                                    </span>
+                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+                                                        {student.email || 'N/A'}
+                                                    </span>
+                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+                                                        {student.year || 'N/A'}
+                                                    </span>
+                                                    <span className="text-[12px] md:text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] truncate">
+                                                        {student.username || 'N/A'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>

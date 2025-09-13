@@ -1,0 +1,93 @@
+Teacher Roster API Overview
+
+Endpoint
+- GET /api/v1/admin/teachers/{teacher_id}/roster/
+- Auth: Bearer JWT required in Authorization header
+- Accept: application/json
+
+Path Parameters
+- teacher_id (integer, required) — The ID of the teacher whose students you want to retrieve
+
+Authentication
+- Requires admin authentication
+- User must belong to the same organization as the teacher
+
+Successful Response
+- HTTP 200
+- Shape: { statusCode, data, error }
+  - statusCode (number): 200 on success
+  - error (null | object): null on success
+  - data (array): List of student objects
+    - id (integer): Student ID
+    - full_name (string): Student's full name
+    - email (string): Student's email address
+    - year (string): Academic year
+    - username (string): Student's username
+
+Error Responses
+- HTTP 401: Authentication credentials were not provided
+- HTTP 403: You do not have permission to perform this action (not admin or different organization)
+- HTTP 404: Teacher not found
+
+Example Request
+curl 'https://dev.takespace.com/api/v1/admin/teachers/10/roster/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'accept: application/json'
+
+Example Success (200)
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": 123,
+      "full_name": "Alice Johnson",
+      "email": "alice.johnson@school.edu",
+      "year": "2024",
+      "username": "alice.johnson"
+    },
+    {
+      "id": 124,
+      "full_name": "Bob Smith",
+      "email": "bob.smith@school.edu",
+      "year": "2024",
+      "username": "bob.smith"
+    },
+    {
+      "id": 125,
+      "full_name": "Charlie Brown",
+      "email": "charlie.brown@school.edu",
+      "year": "2024",
+      "username": "charlie.brown"
+    }
+  ],
+  "error": null
+}
+
+Example Error (404)
+{
+  "statusCode": 404,
+  "data": {},
+  "error": {
+    "code": 404,
+    "message": "Not found.",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+Example Error (403)
+{
+  "statusCode": 403,
+  "data": {},
+  "error": {
+    "code": 403,
+    "message": "You do not have permission to perform this action.",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+
+Notes
+- This endpoint returns a simple list of students associated with a specific teacher
+- No pagination is implemented - returns all students for the teacher
+- The response format is consistent with other admin endpoints
+- Teacher ID must be valid and the requesting user must have admin access
+- Students are returned with basic information (id, name, email, year, username)

@@ -934,6 +934,18 @@ export const api = {
       return { error: { message: String(error?.message || 'Failed to fetch support ticket') } };
     }
   },
+
+  // Teacher Roster API
+  async getTeacherRoster(teacherId) {
+    try {
+      const url = `${API_BASE_URL}/admin/teachers/${teacherId}/roster/`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher roster:', error);
+      return { error: { message: String(error?.message || 'Failed to fetch teacher roster') } };
+    }
+  },
 };
 
 export default api;
