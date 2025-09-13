@@ -17,6 +17,9 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
     const [loadingSubjects, setLoadingSubjects] = useState(false);
     const [subjectsError, setSubjectsError] = useState(null);
     const [updatingSubjects, setUpdatingSubjects] = useState(false);
+    const [teacherDetails, setTeacherDetails] = useState(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [detailsError, setDetailsError] = useState(null);
 
     const handleSubjectChange = (subject) => {
         setSelectedSubjects(prev => {
@@ -60,6 +63,28 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
             setUpdatingSubjects(false);
         }
     };
+
+    // Fetch teacher details when modal opens
+    useEffect(() => {
+        const fetchTeacherDetails = async () => {
+            if (teacher?.id && isOpen) {
+                setLoadingDetails(true);
+                setDetailsError(null);
+                try {
+                    const details = await api.getTeacherDetails(teacher.id);
+                    setTeacherDetails(details);
+                } catch (error) {
+                    console.error('Error fetching teacher details:', error);
+                    setDetailsError('Failed to load teacher details');
+                    setTeacherDetails(null);
+                } finally {
+                    setLoadingDetails(false);
+                }
+            }
+        };
+
+        fetchTeacherDetails();
+    }, [teacher?.id, isOpen]);
 
     // Fetch students when teacher changes or modal opens
     useEffect(() => {
@@ -135,7 +160,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                     {/* Header Row */}
                     <div className="absolute left-[36px] top-[29px] flex items-center gap-2">
                         <h2 className="text-[20px] font-medium text-[#103358] leading-[24px] font-['Poppins']">
-                            {teacher?.name || 'Alya , Osman'}
+                            {loadingDetails ? 'Loading...' : (teacherDetails?.full_name || teacher?.full_name || teacher?.name || 'Teacher Name')}
                         </h2>
                     </div>
 
@@ -175,7 +200,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                         Name
                                     </p>
                                     <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                        {teacher?.fullName || 'Alya Osaman'}
+                                        {loadingDetails ? 'Loading...' : (teacherDetails?.full_name || teacher?.full_name || teacher?.name || 'N/A')}
                                     </p>
                                 </div>
                                 <div>
@@ -183,7 +208,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                         Email Address
                                     </p>
                                     <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                        {teacher?.email || 'alya@5steps.academy'}
+                                        {loadingDetails ? 'Loading...' : (teacherDetails?.email || teacher?.email || 'N/A')}
                                     </p>
                                 </div>
                                 <div>
@@ -191,7 +216,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                         Username
                                     </p>
                                     <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                        {teacher?.username || 'alya'}
+                                        {loadingDetails ? 'Loading...' : (teacherDetails?.username || teacher?.username || 'N/A')}
                                     </p>
                                 </div>
                             </div>
@@ -208,7 +233,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                             <div className="flex items-center gap-4">
                                 <img src="/teacher/calculator.svg" alt="calculator" className="w-[18px] h-[18px]" />
                                 <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                    {teacher?.subjects?.join(', ') || 'Maths'}
+                                    {loadingDetails ? 'Loading...' : (teacherDetails?.subjects?.map(s => s.name || s).join(', ') || teacher?.subjects?.map(s => s.name || s).join(', ') || 'No subjects assigned')}
                                 </span>
                             </div>
                         </div>
@@ -259,7 +284,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                         Account Created
                                     </p>
                                     <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                        {teacher?.accountCreated || '20/12/22'}
+                                        {loadingDetails ? 'Loading...' : (teacherDetails?.created_at || teacher?.created_at || 'N/A')}
                                     </p>
                                 </div>
                                 <div>
@@ -267,7 +292,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                         Last Updated
                                     </p>
                                     <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px]">
-                                        {teacher?.lastUpdated || '26/12/22'}
+                                        {loadingDetails ? 'Loading...' : (teacherDetails?.modified_at || teacher?.modified_at || 'N/A')}
                                     </p>
                                 </div>
                             </div>
@@ -286,7 +311,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                         <div className="absolute left-[36px] top-[29px] flex items-center gap-2">
                             <img src="/teacher/blueuser.svg" alt="user" className="w-[17px] h-[19.43px]" />
                             <h2 className="text-[20px] font-medium text-[#103358] leading-[24px] font-['Poppins']">
-                                {teacher?.name || 'Osman , Alya'}
+                                {teacher?.full_name || teacher?.name || 'Teacher Name'}
                             </h2>
                         </div>
 
@@ -391,10 +416,10 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                             <div className="flex items-center justify-between mb-4">
                                 <div>
                                     <h2 className="text-[20px] md:text-[24px] font-medium text-[#103358] leading-[24px] font-['Poppins'] mb-2">
-                                        {teacher?.name || 'Alya , Osman'}'s Roster
+                                        {teacher?.full_name || teacher?.name || 'Teacher Name'}'s Roster
                                     </h2>
                                     <p className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']">
-                                        {teacher?.name || 'Alya , Osman'}'s Roster contains the following {students.length} students.
+                                        {teacher?.full_name || teacher?.name || 'Teacher Name'}'s Roster contains the following {students.length} students.
                                     </p>
                                 </div>
                                 <button 

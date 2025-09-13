@@ -997,6 +997,18 @@ export const api = {
       return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
     }
   },
+
+  // Get Teacher Details API
+  async getTeacherDetails(teacherId) {
+    try {
+      const url = `${API_BASE_URL}/admin/teachers/${teacherId}/`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching teacher details:', error);
+      throw error;
+    }
+  },
 };
 
 export default api;

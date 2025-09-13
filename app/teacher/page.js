@@ -262,7 +262,6 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, onRestore }) => {
             prepareRow(row);
             const teacher = row.original;
             const isInactive = teacher.is_active === false || teacher.is_active === "False" || teacher.is_active === "false";
-            console.log(`Teacher ${teacher.name}: is_active = ${teacher.is_active}, isInactive = ${isInactive}`); // Debug log
             
             return (
               <tr 
@@ -401,17 +400,19 @@ const TeachersPage = () => {
 
                 // Load teachers
                 const teacherApiData = await api.listTeachers();
-                console.log('Raw teacher data from API:', teacherApiData); // Debug log
                 const teachers = teacherApiData.map(t => ({
                     id: String(t.id || t.teacher_id || ''),
                     name: t.full_name || t.name || '-',
+                    full_name: t.full_name || t.name || '-',
                     email: t.email || '-',
+                    username: t.username || '-',
                     totalStudents: Number(t.total_students || t.totalStudents || 0),
                     status: t.status || 'active',
                     is_active: t.is_active !== undefined ? (t.is_active === true || t.is_active === "True" || t.is_active === "true") : true, // Convert string to boolean
-                    subjects: Array.isArray(t.subjects) ? t.subjects.map(s => s.name || idToName[String(s.id)]).filter(Boolean) : []
+                    subjects: Array.isArray(t.subjects) ? t.subjects : [],
+                    created_at: t.created_at || t.date_joined || t.created || '-',
+                    modified_at: t.modified_at || t.updated_at || t.updated || '-'
                 }));
-                console.log('Processed teacher data:', teachers); // Debug log
 
                 const subjectNames = subjectOptions.map(s => s.name);
                 const data = { teachers, subjects: subjectNames };
@@ -550,11 +551,15 @@ const TeachersPage = () => {
             const teachers = teacherApiData.map(t => ({
                 id: String(t.id || t.teacher_id || ''),
                 name: t.full_name || t.name || '-',
+                full_name: t.full_name || t.name || '-',
                 email: t.email || '-',
+                username: t.username || '-',
                 totalStudents: Number(t.total_students || t.totalStudents || 0),
                 status: t.status || 'active',
                 is_active: t.is_active !== undefined ? (t.is_active === true || t.is_active === "True" || t.is_active === "true") : true, // Convert string to boolean
-                subjects: Array.isArray(t.subjects) ? t.subjects.map(s => s.name || subjectIdToName[String(s.id)]).filter(Boolean) : []
+                subjects: Array.isArray(t.subjects) ? t.subjects : [],
+                created_at: t.created_at || t.date_joined || t.created || '-',
+                modified_at: t.modified_at || t.updated_at || t.updated || '-'
             }));
             setPageData(prev => ({ ...prev, teachers }));
             setFilteredTeachers(teachers);
