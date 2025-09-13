@@ -471,7 +471,7 @@ const fetcher = (data) => {
 
 // Real API functions
 const API_BASE_URL = 'https://dev.takespace.com/api/v1';
-const FIXED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3NzU2ODM1LCJpYXQiOjE3NTc2NzA0MzUsImp0aSI6ImNjNjQ3ZjZkZWVkZTQ4NDk4MDE4MjNhMjQ4NTkwMjUwIiwidXNlcl9pZCI6MX0.teahC5wAQEf33-3NK9dPqZ8krnDay78uFPPlJGnQf0M';
+const FIXED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3ODQzMzIzLCJpYXQiOjE3NTc3NTY5MjMsImp0aSI6IjViODZhMTdjNDdlNzRjOTM5ZGJhMGNjN2UzNjkzNzJmIiwidXNlcl9pZCI6MX0.zi1ElASZUlbBDyVNjNZ2H2Wi22DDYGH1hCA1jpoPwrE';
 
 const apiRequest = async (url, options = {}) => {
   const response = await fetch(url, {
@@ -492,13 +492,24 @@ const apiRequest = async (url, options = {}) => {
   return response.json();
 };
 
-// Get subjects
+// Get subjects (admin students subjects)
 const getSubjects = async () => {
   try {
     const data = await apiRequest(`${API_BASE_URL}/admin/students/subjects/`);
     return data;
   } catch (error) {
     console.error('Error fetching subjects:', error);
+    throw error;
+  }
+};
+
+// Get all subjects (general subjects list)
+const getAllSubjects = async () => {
+  try {
+    const data = await apiRequest(`${API_BASE_URL}/subjects/`);
+    return data;
+  } catch (error) {
+    console.error('Error fetching all subjects:', error);
     throw error;
   }
 };
@@ -790,6 +801,7 @@ export const api = {
   getStudentsPageData, // New function for students page
   // Real API functions
   getSubjects,
+  getAllSubjects,
   getUnits,
   updateSubjectGoals,
   // --- Teachers (real) ---
@@ -944,6 +956,45 @@ export const api = {
     } catch (error) {
       console.error('Error fetching teacher roster:', error);
       return { error: { message: String(error?.message || 'Failed to fetch teacher roster') } };
+    }
+  },
+
+  // Teacher Activate/Deactivate API
+  async activateTeacher(teacherId) {
+    try {
+      const url = `${API_BASE_URL}/admin/teachers/${teacherId}/activate/`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: true }),
+      });
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error activating teacher:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  async deactivateTeacher(teacherId) {
+    try {
+      const url = `${API_BASE_URL}/admin/teachers/${teacherId}/deactivate/`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: false }),
+      });
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error deactivating teacher:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
     }
   },
 };

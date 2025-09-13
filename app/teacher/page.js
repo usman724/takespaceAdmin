@@ -135,7 +135,7 @@ const OptionsDropdown = ({ isOpen, onClose, onResetPassword, onExportTeachers })
 };
 
 // React Table Component with Figma styling
-const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onRestore }) => {
+const TeachersTable = ({ data, onDelete, onTeacherClick, onRestore }) => {
   const { t } = useTranslation();
 
   const columns = useMemo(() => [
@@ -171,17 +171,17 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
       accessor: 'actions',
       Cell: ({ row }) => {
         const teacher = row.original;
-        const isDeleted = deletedTeacher && deletedTeacher.id === teacher.id;
+        const isInactive = teacher.is_active === false;
         
         return (
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 
-              if (!isDeleted) {
+              if (!isInactive) {
                 onDelete(teacher); 
               }
             }} 
-            className={`${isDeleted ? 'hidden' : 'text-red-500 hover:text-red-700'}`}
+            className={`${isInactive ? 'hidden' : 'text-red-500 hover:text-red-700'}`}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -190,7 +190,7 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
         );
       }
     }
-  ], [t, onDelete, deletedTeacher]);
+  ], [t, onDelete]);
 
   const {
     getTableProps,
@@ -261,25 +261,26 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, deletedTeacher, onResto
           {page.map(row => {
             prepareRow(row);
             const teacher = row.original;
-            const isDeleted = deletedTeacher && deletedTeacher.id === teacher.id;
+            const isInactive = teacher.is_active === false || teacher.is_active === "False" || teacher.is_active === "false";
+            console.log(`Teacher ${teacher.name}: is_active = ${teacher.is_active}, isInactive = ${isInactive}`); // Debug log
             
             return (
               <tr 
                 {...row.getRowProps()} 
-                className={`border-b border-[#E0E0E0] ${isDeleted ? 'bg-[#398AC8] text-white' : 'bg-[#F8F9FA] hover:bg-[#E3F2FD] cursor-pointer'}`}
-                onClick={!isDeleted ? () => onTeacherClick(teacher) : undefined}
+                className={`border-b border-[#E0E0E0] ${isInactive ? 'bg-[#398AC8] text-white' : 'bg-[#F8F9FA] hover:bg-[#E3F2FD] cursor-pointer'}`}
+                onClick={!isInactive ? () => onTeacherClick(teacher) : undefined}
               >
-                {isDeleted ? (
-                  // Show restore message when teacher is deleted
+                {isInactive ? (
+                  // Show restore message when teacher is inactive
                   <td colSpan={4} className="px-6 py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-white text-[14px] leading-[24px] font-normal font-['Poppins']">
-                        {deletedTeacher.name}'s account has been removed
+                        {teacher.name}'s account has been removed
                       </span>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          onRestore();
+                          onRestore(teacher);
                         }} 
                         className="bg-white text-[#398AC8] px-4 py-2 rounded font-medium text-[14px] leading-[24px] font-['Poppins']"
                       >
@@ -376,7 +377,6 @@ const TeachersPage = () => {
     const [pageData, setPageData] = useState({ teachers: [], subjects: [] });
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState({ type: null, isOpen: false });
-    const [deletedTeacher, setDeletedTeacher] = useState(null);
     const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
     const [optionsDropdownOpen, setOptionsDropdownOpen] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState('');
@@ -401,14 +401,17 @@ const TeachersPage = () => {
 
                 // Load teachers
                 const teacherApiData = await api.listTeachers();
+                console.log('Raw teacher data from API:', teacherApiData); // Debug log
                 const teachers = teacherApiData.map(t => ({
                     id: String(t.id || t.teacher_id || ''),
                     name: t.full_name || t.name || '-',
                     email: t.email || '-',
                     totalStudents: Number(t.total_students || t.totalStudents || 0),
                     status: t.status || 'active',
+                    is_active: t.is_active !== undefined ? (t.is_active === true || t.is_active === "True" || t.is_active === "true") : true, // Convert string to boolean
                     subjects: Array.isArray(t.subjects) ? t.subjects.map(s => s.name || idToName[String(s.id)]).filter(Boolean) : []
                 }));
+                console.log('Processed teacher data:', teachers); // Debug log
 
                 const subjectNames = subjectOptions.map(s => s.name);
                 const data = { teachers, subjects: subjectNames };
@@ -435,47 +438,75 @@ const TeachersPage = () => {
         setFilterDropdownOpen(false);
     };
 
-    // Handle removed teacher display
-    const getRemovedTeacher = () => {
-        return filteredTeachers.find(teacher => teacher.status === 'removed');
+    // Handle inactive teachers display
+    const getInactiveTeachers = () => {
+        return filteredTeachers.filter(teacher => 
+            teacher.is_active === false || teacher.is_active === "False" || teacher.is_active === "false"
+        );
     };
 
     const getActiveTeachers = () => {
-        return filteredTeachers.filter(teacher => teacher.status !== 'removed');
+        return filteredTeachers.filter(teacher => 
+            teacher.is_active !== false && teacher.is_active !== "False" && teacher.is_active !== "false"
+        );
     };
 
-    const handleDelete = (teacherToDelete) => {
-        // Mark the teacher as removed instead of filtering out
-        const updatedTeacher = { ...teacherToDelete, status: 'removed' };
-        setDeletedTeacher(updatedTeacher);
-        
-        // Update the teacher status in both arrays
-        setPageData(prev => ({
-            ...prev,
-            teachers: prev.teachers.map(t => 
-                t.id === teacherToDelete.id ? updatedTeacher : t
-            )
-        }));
-        setFilteredTeachers(prev => prev.map(t => 
-            t.id === teacherToDelete.id ? updatedTeacher : t
-        ));
-    };
-
-    const handleRestore = () => {
-        if (deletedTeacher) {
-            // Restore the teacher by changing status back to active
-            const restoredTeacher = { ...deletedTeacher, status: 'active' };
+    const handleDelete = async (teacherToDelete) => {
+        try {
+            // Call deactivate API
+            const result = await api.deactivateTeacher(teacherToDelete.id);
             
-            setPageData(prev => ({
-                ...prev,
-                teachers: prev.teachers.map(t => 
-                    t.id === deletedTeacher.id ? restoredTeacher : t
-                )
-            }));
-            setFilteredTeachers(prev => prev.map(t => 
-                t.id === deletedTeacher.id ? restoredTeacher : t
-            ));
-            setDeletedTeacher(null);
+            if (result.ok) {
+                // Mark the teacher as inactive
+                const updatedTeacher = { ...teacherToDelete, is_active: false };
+                
+                // Update the teacher status in both arrays
+                setPageData(prev => ({
+                    ...prev,
+                    teachers: prev.teachers.map(t => 
+                        t.id === teacherToDelete.id ? updatedTeacher : t
+                    )
+                }));
+                setFilteredTeachers(prev => prev.map(t => 
+                    t.id === teacherToDelete.id ? updatedTeacher : t
+                ));
+                
+                toast.success('Teacher deactivated successfully');
+            } else {
+                toast.error('Failed to deactivate teacher');
+            }
+        } catch (error) {
+            console.error('Error deactivating teacher:', error);
+            toast.error('Error deactivating teacher');
+        }
+    };
+
+    const handleRestore = async (teacherToRestore) => {
+        try {
+            // Call activate API
+            const result = await api.activateTeacher(teacherToRestore.id);
+            
+            if (result.ok) {
+                // Restore the teacher by changing is_active back to true
+                const restoredTeacher = { ...teacherToRestore, is_active: true };
+                
+                setPageData(prev => ({
+                    ...prev,
+                    teachers: prev.teachers.map(t => 
+                        t.id === teacherToRestore.id ? restoredTeacher : t
+                    )
+                }));
+                setFilteredTeachers(prev => prev.map(t => 
+                    t.id === teacherToRestore.id ? restoredTeacher : t
+                ));
+                
+                toast.success('Teacher activated successfully');
+            } else {
+                toast.error('Failed to activate teacher');
+            }
+        } catch (error) {
+            console.error('Error activating teacher:', error);
+            toast.error('Error activating teacher');
         }
     };
 
@@ -522,6 +553,7 @@ const TeachersPage = () => {
                 email: t.email || '-',
                 totalStudents: Number(t.total_students || t.totalStudents || 0),
                 status: t.status || 'active',
+                is_active: t.is_active !== undefined ? (t.is_active === true || t.is_active === "True" || t.is_active === "true") : true, // Convert string to boolean
                 subjects: Array.isArray(t.subjects) ? t.subjects.map(s => s.name || subjectIdToName[String(s.id)]).filter(Boolean) : []
             }));
             setPageData(prev => ({ ...prev, teachers }));
@@ -595,7 +627,7 @@ const TeachersPage = () => {
     };
 
     const activeTeachers = getActiveTeachers();
-    const removedTeacher = getRemovedTeacher();
+    const inactiveTeachers = getInactiveTeachers();
 
     if (loading) {
         return <I18nProvider><Layout><div className="flex justify-center items-center h-screen">{t('loading')}</div></Layout></I18nProvider>;
@@ -696,7 +728,6 @@ const TeachersPage = () => {
                             }))} 
                             onDelete={handleDelete}
                             onTeacherClick={handleTeacherClick}
-                            deletedTeacher={deletedTeacher}
                             onRestore={handleRestore}
                         />
                     </div>

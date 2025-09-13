@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../lib/api';
+import toast, { Toaster } from 'react-hot-toast';
 
 const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEditSubjects }) => {
     const { t } = useTranslation();
@@ -12,6 +13,10 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
     const [students, setStudents] = useState([]);
     const [loadingStudents, setLoadingStudents] = useState(false);
     const [studentsError, setStudentsError] = useState(null);
+    const [allSubjects, setAllSubjects] = useState([]);
+    const [loadingSubjects, setLoadingSubjects] = useState(false);
+    const [subjectsError, setSubjectsError] = useState(null);
+    const [updatingSubjects, setUpdatingSubjects] = useState(false);
 
     const handleSubjectChange = (subject) => {
         setSelectedSubjects(prev => {
@@ -22,9 +27,38 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
         });
     };
 
-    const handleSubjectSubmit = () => {
-        onEditSubjects(selectedSubjects);
-        setShowSubjectEdit(false);
+    const handleSubjectSubmit = async () => {
+        if (!teacher?.id) return;
+        
+        setUpdatingSubjects(true);
+        try {
+            // Map subject names to IDs
+            const subjectIds = selectedSubjects
+                .map(subjectName => {
+                    const subject = allSubjects.find(s => s.name === subjectName);
+                    return subject ? subject.id : null;
+                })
+                .filter(Boolean);
+
+            // Update teacher subjects using the API
+            const response = await api.assignSubjectsToTeacher(teacher.id, subjectIds);
+            
+            if (response.ok) {
+                // Update local state
+                onEditSubjects(selectedSubjects);
+                setShowSubjectEdit(false);
+                toast.success('Subjects updated successfully');
+            } else {
+                const errorMessage = response.body?.error?.message || 'Failed to update subjects';
+                console.error('Failed to update subjects:', errorMessage);
+                toast.error(errorMessage);
+            }
+        } catch (error) {
+            console.error('Error updating subjects:', error);
+            toast.error('Failed to update subjects. Please try again.');
+        } finally {
+            setUpdatingSubjects(false);
+        }
     };
 
     // Fetch students when teacher changes or modal opens
@@ -54,10 +88,38 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
         fetchStudents();
     }, [teacher?.id, isOpen]);
 
+    // Fetch all subjects when modal opens
+    useEffect(() => {
+        const fetchAllSubjects = async () => {
+            if (isOpen) {
+                setLoadingSubjects(true);
+                setSubjectsError(null);
+                try {
+                    const response = await api.getAllSubjects();
+                    if (response.error) {
+                        setSubjectsError(response.error.message);
+                        setAllSubjects([]);
+                    } else {
+                        setAllSubjects(response.data || []);
+                    }
+                } catch (error) {
+                    console.error('Error fetching subjects:', error);
+                    setSubjectsError('Failed to load subjects');
+                    setAllSubjects([]);
+                } finally {
+                    setLoadingSubjects(false);
+                }
+            }
+        };
+
+        fetchAllSubjects();
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
         <>
+            <Toaster position="top-right" />
             {/* Main Teacher Details Modal */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 {/* Background Overlay */}
@@ -241,43 +303,57 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                             <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins'] mb-4">
                                 Subjects
                             </h3>
-                            <div className="flex gap-5">
-                                {['Maths', 'English Language'].map(subject => (
-                                    <div key={subject} className="flex items-center gap-3">
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                id={subject}
-                                                checked={selectedSubjects.includes(subject)}
-                                                onChange={() => handleSubjectChange(subject)}
-                                                className="w-[22px] h-[22px] bg-white border border-[#103358] rounded-[3px] checked:bg-[#103358] checked:border-[#103358] appearance-none relative cursor-pointer"
-                                            />
-                                            {selectedSubjects.includes(subject) && (
-                                                <svg
-                                                    className="absolute top-0 left-0 w-[22px] h-[22px] pointer-events-none"
-                                                    viewBox="0 0 22 22"
-                                                    fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                >
-                                                    <path
-                                                        d="M6 11L9 14L16 7"
-                                                        stroke="white"
-                                                        strokeWidth="2"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                    />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        <label
-                                            htmlFor={subject}
-                                            className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] cursor-pointer"
-                                        >
-                                            {subject}
-                                        </label>
+                            {loadingSubjects ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <div className="text-[14px] text-[#374151] font-['Poppins']">
+                                        Loading subjects...
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ) : subjectsError ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <div className="text-[14px] text-red-500 font-['Poppins']">
+                                        {subjectsError}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-wrap gap-5">
+                                    {allSubjects.map(subject => (
+                                        <div key={subject.id} className="flex items-center gap-3">
+                                            <div className="relative">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`subject-${subject.id}`}
+                                                    checked={selectedSubjects.includes(subject.name)}
+                                                    onChange={() => handleSubjectChange(subject.name)}
+                                                    className="w-[22px] h-[22px] bg-white border border-[#103358] rounded-[3px] checked:bg-[#103358] checked:border-[#103358] appearance-none relative cursor-pointer"
+                                                />
+                                                {selectedSubjects.includes(subject.name) && (
+                                                    <svg
+                                                        className="absolute top-0 left-0 w-[22px] h-[22px] pointer-events-none"
+                                                        viewBox="0 0 22 22"
+                                                        fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            d="M6 11L9 14L16 7"
+                                                            stroke="white"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <label
+                                                htmlFor={`subject-${subject.id}`}
+                                                className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] cursor-pointer"
+                                            >
+                                                {subject.name}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Buttons */}
@@ -290,9 +366,14 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                             </button>
                             <button
                                 onClick={handleSubjectSubmit}
-                                className="w-[92px] h-[40px] bg-[#16375A] text-white rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px]"
+                                disabled={updatingSubjects}
+                                className={`w-[92px] h-[40px] rounded-[8px] text-[16px] font-normal leading-[24px] font-['Poppins'] flex items-center justify-center letter-spacing-[0.5px] ${
+                                    updatingSubjects 
+                                        ? 'bg-gray-400 text-white cursor-not-allowed' 
+                                        : 'bg-[#16375A] text-white hover:bg-[#0f2a47]'
+                                }`}
                             >
-                                Submit
+                                {updatingSubjects ? 'Updating...' : 'Submit'}
                             </button>
                         </div>
                     </div>

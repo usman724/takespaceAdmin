@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: TakeSpace REST API
-  version: 0.1 (c7e54df@dev)
+  version: 0.1 (7979b8b@dev)
   description: Intelligent Training System
 paths:
   /api/v1/admin/leaderboards/:
@@ -670,6 +670,11 @@ paths:
         schema:
           type: string
         description: Filter by subject ID.
+      - in: query
+        name: teacher
+        schema:
+          type: string
+        description: Filter by teacher ID.
       tags:
       - Admin
       security:
@@ -735,6 +740,89 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateTeacher'
           description: ''
+  /api/v1/admin/teachers/{id}/:
+    get:
+      operationId: admin_teachers_retrieve
+      description: Get comprehensive information about a specific teacher including
+        analytics and progress data
+      summary: Get Teacher Details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherDetail'
+          description: ''
+  /api/v1/admin/teachers/{id}/activate/:
+    post:
+      operationId: admin_teachers_activate_create
+      description: Activate a teacher account
+      summary: Activate Teacher
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/teachers/{id}/deactivate/:
+    post:
+      operationId: admin_teachers_deactivate_create
+      description: Deactivate a teacher account
+      summary: Deactivate Teacher
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/admin/teachers/{id}/roster/:
     get:
       operationId: admin_teachers_roster_list
@@ -781,6 +869,36 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/AddSubjects'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/teachers/{id}/toggle-status/:
+    post:
+      operationId: admin_teachers_toggle_status_create
+      description: Toggle teacher active status
+      summary: Toggle Teacher Status
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ToggleTeacherStatus'
         required: true
       security:
       - jwtAuth: []
@@ -6176,6 +6294,107 @@ components:
       - homework_to_classwork_questions
       - homework_to_classwork_time
       - teacher_engagement
+    TeacherDetail:
+      type: object
+      description: Comprehensive serializer for detailed teacher information
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+          readOnly: true
+        avatar_url:
+          type: string
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/BasicSubject'
+        total_students:
+          type: integer
+          description: Get total number of students assigned to this teacher
+          readOnly: true
+        engagement_score:
+          type: string
+          readOnly: true
+        analytics_summary:
+          type: object
+          additionalProperties: {}
+          description: Get comprehensive analytics summary for the teacher
+          readOnly: true
+        student_progress_summary:
+          type: object
+          additionalProperties: {}
+          description: Get summary of student progress by subject
+          readOnly: true
+        created_at:
+          type: string
+          description: Format created_at timestamp
+          readOnly: true
+        modified_at:
+          type: string
+          description: Format modified_at timestamp
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+      required:
+      - analytics_summary
+      - avatar_url
+      - created_at
+      - date_of_birth
+      - email
+      - engagement_score
+      - first_name
+      - full_name
+      - id
+      - is_active
+      - last_login
+      - last_name
+      - modified_at
+      - organization_id
+      - organization_name
+      - phone
+      - student_progress_summary
+      - subjects
+      - total_students
+      - username
     TeacherEngagement:
       type: object
       properties:
@@ -6224,6 +6443,12 @@ components:
           type: string
           format: email
           readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+          readOnly: true
         total_students:
           type: integer
           readOnly: true
@@ -6242,6 +6467,7 @@ components:
       - email
       - full_name
       - id
+      - is_active
       - modified_at
       - subjects
       - total_students
@@ -6426,6 +6652,14 @@ components:
       - id
       - name
     ToggleStudentStatus:
+      type: object
+      properties:
+        is_active:
+          type: boolean
+          writeOnly: true
+      required:
+      - is_active
+    ToggleTeacherStatus:
       type: object
       properties:
         is_active:
