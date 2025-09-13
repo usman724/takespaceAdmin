@@ -1,11 +1,14 @@
 'use client';
 
-const DeactivateStudentModal = ({ isOpen, onClose, studentsCount = 165 }) => {
+const DeactivateStudentModal = ({ isOpen, onClose, studentsCount = 165, onDeactivate }) => {
   
   const handleDeactivate = () => {
-    // Deactivate students functionality
-    console.log(`Deactivating ${studentsCount} students`);
-    onClose();
+    if (onDeactivate) {
+      onDeactivate();
+    } else {
+      console.log(`Deactivating ${studentsCount} students`);
+      onClose();
+    }
   };
 
   if (!isOpen) return null;

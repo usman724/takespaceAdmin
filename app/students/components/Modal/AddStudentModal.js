@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import api from '@/app/lib/api';
+import { useState, useEffect } from 'react';
+import { Plus, X, Check } from 'lucide-react';
+
 
 const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = [] }) => {
   const [formData, setFormData] = useState({
@@ -11,13 +14,58 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
     userName: '',
     password: '',
     email: '',
-    aptitudeLevel: '1 - highest',
+    aptitudeLevel: '1',
     subjects: [],
     teachers: []
   });
 
   const [showTeacherSearch, setShowTeacherSearch] = useState(false);
+  const [showSubjectSearch, setShowSubjectSearch] = useState(false);
   const [teacherSearchTerm, setTeacherSearchTerm] = useState('');
+  const [subjectSearchTerm, setSubjectSearchTerm] = useState('');
+  const [availableTeachers, setAvailableTeachers] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch teachers and subjects when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          const [teachersResponse, subjectsResponse] = await Promise.all([
+            api.listTeachers(),
+            api.getSubjects()
+          ]);
+
+          // Transform teachers data
+          const teachers = teachersResponse.map(teacher => ({
+            id: teacher.id,
+            name: `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() || teacher.full_name || teacher.name || 'Unknown Teacher',
+            email: teacher.email || ''
+          }));
+
+          // Transform subjects data
+          const subjects = subjectsResponse.data?.map(subject => ({
+            id: subject.id,
+            name: subject.name || subject.title || 'Unknown Subject'
+          })) || [];
+
+          setAvailableTeachers(teachers);
+          setAvailableSubjects(subjects);
+        } catch (error) {
+          console.error('Error fetching teachers and subjects:', error);
+          // Fallback to props if API fails
+          setAvailableTeachers(teachers.map((name, index) => ({ id: index, name, email: '' })));
+          setAvailableSubjects(subjects.map((name, index) => ({ id: index, name })));
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }
+  }, [isOpen, teachers, subjects]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,7 +73,7 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
   };
 
   const handleTeacherSelect = (teacher) => {
-    if (!formData.teachers.includes(teacher)) {
+    if (!formData.teachers.find(t => t.id === teacher.id)) {
       setFormData(prev => ({
         ...prev,
         teachers: [...prev.teachers, teacher]
@@ -38,12 +86,34 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
   const handleTeacherRemove = (teacher) => {
     setFormData(prev => ({
       ...prev,
-      teachers: prev.teachers.filter(t => t !== teacher)
+      teachers: prev.teachers.filter(t => t.id !== teacher.id)
     }));
   };
 
-  const filteredTeachers = teachers.filter(teacher =>
-    teacher.toLowerCase().includes(teacherSearchTerm.toLowerCase())
+  const handleSubjectSelect = (subject) => {
+    if (!formData.subjects.find(s => s.id === subject.id)) {
+      setFormData(prev => ({
+        ...prev,
+        subjects: [...prev.subjects, subject]
+      }));
+    }
+    setShowSubjectSearch(false);
+    setSubjectSearchTerm('');
+  };
+
+  const handleSubjectRemove = (subject) => {
+    setFormData(prev => ({
+      ...prev,
+      subjects: prev.subjects.filter(s => s.id !== subject.id)
+    }));
+  };
+
+  const filteredTeachers = availableTeachers.filter(teacher =>
+    teacher.name.toLowerCase().includes(teacherSearchTerm.toLowerCase())
+  );
+
+  const filteredSubjects = availableSubjects.filter(subject =>
+    subject.name.toLowerCase().includes(subjectSearchTerm.toLowerCase())
   );
 
   const handleSubmit = (e) => {
@@ -57,7 +127,7 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
       userName: '',
       password: '',
       email: '',
-      aptitudeLevel: '1 - highest',
+      aptitudeLevel: '1',
       subjects: [],
       teachers: []
     });
@@ -216,11 +286,10 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
                   onChange={handleChange}
                   className="w-full h-[48px] px-4 py-[14px] bg-white border border-[#103358] rounded-[8px] text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] appearance-none"
                 >
-                  <option value="1 - highest">1 - highest</option>
+                  <option value="1">1 - highest</option>
                   <option value="2">2</option>
                   <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5 - lowest">5 - lowest</option>
+                  <option value="4">4 - lowest</option>
                 </select>
                 <div className="absolute right-4 top-[38px] pointer-events-none">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,14 +300,14 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
             </div>
           </div>
 
-          {/* Subjects Section */}
+          {/* Teachers Section */}
           <div className="mb-6 relative">
             <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins'] mb-4">
-              Subjects
+              Teachers
             </h3>
             <div className="mb-4">
               <label className="block text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] mb-2">
-                Add Subjects
+                Add Teachers
               </label>
               <div className="relative">
                 <div className="w-full max-w-[517px] h-[35px] bg-[#EBF3F9] rounded-[40px] relative">
@@ -266,7 +335,7 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
                           onClick={() => handleTeacherSelect(teacher)}
                           className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] border-b border-gray-100 last:border-b-0"
                         >
-                          {teacher}
+                          {teacher.name}
                         </div>
                       ))
                     ) : (
@@ -284,17 +353,89 @@ const AddStudentModal = ({ isOpen, onClose, onSubmit, teachers = [], subjects = 
               <div className="mb-4">
                 <div className="flex flex-wrap gap-2">
                   {formData.teachers.map((teacher, index) => (
-                    <div key={index} className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-[6px]">
-                      <img src="/students/red-trash.svg" alt="remove" className="w-4 h-4" />
+                    <div key={index} className="flex items-center gap-2 bg-green-100 px-3 py-1 rounded-[6px]">
+                      <Check size={14} className="text-green-600" />
                       <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']">
-                        {teacher}
+                        {teacher.name}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleTeacherRemove(teacher)}
-                        className="text-red-500 hover:text-red-700 ml-2"
+                        className="text-red-500 hover:text-red-700 ml-2 p-1 rounded-full hover:bg-red-100"
                       >
-                        ×
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Subjects Section */}
+          <div className="mb-6 relative">
+            <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins'] mb-4">
+              Subjects
+            </h3>
+            <div className="mb-4">
+              <label className="block text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] letter-spacing-[0.25px] mb-2">
+                Add Subjects
+              </label>
+              <div className="relative">
+                <div className="w-full max-w-[517px] h-[35px] bg-[#EBF3F9] rounded-[40px] relative">
+                  <img src="/students/search.svg" alt="search" className="absolute left-5 top-[9px] w-[17px] h-[17px]" />
+                  <input
+                    type="text"
+                    value={subjectSearchTerm}
+                    onChange={(e) => {
+                      setSubjectSearchTerm(e.target.value);
+                      setShowSubjectSearch(true);
+                    }}
+                    onFocus={() => setShowSubjectSearch(true)}
+                    placeholder="Search for subjects"
+                    className="absolute left-[49px] top-[6px] w-[calc(100%-70px)] h-[23px] bg-transparent text-[15px] font-light text-[#BDBDBD] leading-[22px] font-['Poppins'] outline-none placeholder-[#BDBDBD]"
+                  />
+                </div>
+
+                {/* Subject Search Dropdown */}
+                {showSubjectSearch && subjectSearchTerm && (
+                  <div className="absolute top-full left-0 w-full max-w-[379px] bg-white shadow-[0px_0px_14px_rgba(0,0,0,0.09)] rounded-[10px] z-20 mt-1 max-h-[190px] overflow-y-auto">
+                    {filteredSubjects.length > 0 ? (
+                      filteredSubjects.map((subject, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleSubjectSelect(subject)}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins'] border-b border-gray-100 last:border-b-0"
+                        >
+                          {subject.name}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-[14px] font-normal text-[#9CA3AF] leading-[20px] font-['Poppins']">
+                        No subjects found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Selected Subjects Display */}
+            {formData.subjects.length > 0 && (
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2">
+                  {formData.subjects.map((subject, index) => (
+                    <div key={index} className="flex items-center gap-2 bg-green-100 px-3 py-1 rounded-[6px]">
+                      <Check size={14} className="text-green-600" />
+                      <span className="text-[14px] font-normal text-[#374151] leading-[20px] font-['Poppins']">
+                        {subject.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSubjectRemove(subject)}
+                        className="text-red-500 hover:text-red-700 ml-2 p-1 rounded-full hover:bg-red-100"
+                      >
+                        <X size={14} />
                       </button>
                     </div>
                   ))}

@@ -1009,6 +1009,275 @@ export const api = {
       throw error;
     }
   },
+
+  // --- Students API Functions ---
+  
+  // List Students
+  async listStudents({ search = '', grade = '', studentClass = '', aptitudeLevel = '', page = 1 } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (grade) params.set('grade', grade);
+      if (studentClass) params.set('student_class', studentClass);
+      if (aptitudeLevel) params.set('aptitude_level', aptitudeLevel);
+      if (page) params.set('page', page);
+      
+      const url = `${API_BASE_URL}/admin/students/${params.toString() ? `?${params.toString()}` : ''}`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error listing students:', error);
+      throw error;
+    }
+  },
+
+  // Create Student
+  async createStudent({ firstName, lastName, studentClass, grade, username, password, email, aptitudeLevel }) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/`;
+      const body = {
+        first_name: firstName,
+        last_name: lastName,
+        student_class: studentClass,
+        grade: parseInt(grade),
+        username,
+        password,
+        email,
+        aptitude_level: parseInt(aptitudeLevel)
+      };
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json') ? await response.json() : null;
+      return { ok: response.ok, status: response.status, body: payload };
+    } catch (error) {
+      console.error('Error creating student:', error);
+      return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
+    }
+  },
+
+  // Update Student (Full)
+  async updateStudent(studentId, { firstName, lastName, studentClass, grade, username, password, email, aptitudeLevel }) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/`;
+      const body = {
+        first_name: firstName,
+        last_name: lastName,
+        student_class: studentClass,
+        grade: parseInt(grade),
+        username,
+        password,
+        email,
+        aptitude_level: parseInt(aptitudeLevel)
+      };
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error updating student:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Update Student (Partial)
+  async patchStudent(studentId, updateData) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/`;
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error patching student:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Delete Student
+  async deleteStudent(studentId) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+        },
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Toggle Student Status
+  async toggleStudentStatus(studentId, isActive) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/toggle-status/`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error toggling student status:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Add Teachers to Student
+  async addTeachersToStudent(studentId, teacherIds) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/teachers/`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ teacher_ids: teacherIds }),
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error adding teachers to student:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Remove Teacher from Student
+  async removeTeacherFromStudent(studentId, teacherId) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/teachers/${teacherId}/`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+        },
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error removing teacher from student:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Add Subjects to Student
+  async addSubjectsToStudent(studentId, subjectIds) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/subjects/`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ subject_ids: subjectIds }),
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error adding subjects to student:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Remove Subject from Student
+  async removeSubjectFromStudent(studentId, subjectId) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/subjects/${subjectId}/remove/`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+        },
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error removing subject from student:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Bulk Deactivate Students
+  async bulkDeactivateStudents(studentIds) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/deactivate/`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ student_ids: studentIds }),
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error bulk deactivating students:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
+    }
+  },
+
+  // Get Student Details
+  async getStudentDetails(studentId) {
+    try {
+      const url = `${API_BASE_URL}/admin/students/${studentId}/`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+      throw error;
+    }
+  },
 };
 
 export default api;

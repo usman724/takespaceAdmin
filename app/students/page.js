@@ -224,7 +224,7 @@ const MoreDropdown = ({ isOpen, onClose, onExportCurrent, onExportAll, onUploadR
 };
 
 // React Table Component
-const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onRestore }) => {
+const StudentsTable = ({ data, onDelete, onStudentClick, onRestore }) => {
   const { t } = useTranslation();
 
   const columns = useMemo(() => [
@@ -302,38 +302,65 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
       Header: 'Subject',
       accessor: 'subjects',
       responsiveClass: 'hidden sm:table-cell',
-      Cell: ({ value }) => (
-        <div className="flex items-center gap-[9px] h-[44px]">
-          {Array.isArray(value) ? value.map((subject, index) => (
-            <div 
-              key={index} 
-              className={`flex flex-col justify-center items-center py-[10px] h-[44px] ${
-                subject === 'M4' ? 'border-b border-[#398AC8] w-[21px]' : 
-                subject === 'E6' ? 'border-b border-[#EB5757] w-[17px]' : 
-                'border-b border-[#398AC8] w-[21px]'
-              }`}
-            >
-              <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins']">
+      Cell: ({ value }) => {
+        const subjects = Array.isArray(value) ? value : [];
+        const maxDisplay = 2;
+        const displaySubjects = subjects.slice(0, maxDisplay);
+        const remainingCount = subjects.length - maxDisplay;
+        
+        return (
+          <div className="flex items-center gap-1 flex-wrap">
+            {displaySubjects.map((subject, index) => (
+              <span 
+                key={index} 
+                className="text-[12px] px-2 py-1 bg-gray-100 text-[#103358] rounded-full font-normal font-['Poppins']"
+              >
                 {subject}
               </span>
-            </div>
-          )) : (
-            <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins']">
-              {value}
-            </span>
-          )}
-        </div>
-      )
+            ))}
+            {remainingCount > 0 && (
+              <span className="text-[12px] px-2 py-1 bg-blue-100 text-blue-600 rounded-full font-medium font-['Poppins']">
+                +{remainingCount} more
+              </span>
+            )}
+            {subjects.length === 0 && (
+              <span className="text-[12px] text-gray-400 italic">No subjects</span>
+            )}
+          </div>
+        );
+      }
     },
     {
       Header: 'Teacher',
       accessor: 'teachers',
       responsiveClass: 'hidden lg:table-cell',
-      Cell: ({ value }) => (
-        <span className="text-[14px] leading-[24px] text-[#103358] font-normal font-['Poppins']">
-          {value}
-        </span>
-      )
+      Cell: ({ value }) => {
+        const teachers = Array.isArray(value) ? value : (typeof value === 'string' ? value.split(',').map(t => t.trim()) : []);
+        const maxDisplay = 1;
+        const displayTeachers = teachers.slice(0, maxDisplay);
+        const remainingCount = teachers.length - maxDisplay;
+        
+        return (
+          <div className="flex items-center gap-1 flex-wrap">
+            {displayTeachers.map((teacher, index) => (
+              <span 
+                key={index} 
+                className="text-[12px] px-2 py-1 bg-blue-100 text-blue-600 rounded-full font-normal font-['Poppins']"
+              >
+                {teacher}
+              </span>
+            ))}
+            {remainingCount > 0 && (
+              <span className="text-[12px] px-2 py-1 bg-green-100 text-green-600 rounded-full font-medium font-['Poppins']">
+                +{remainingCount} more
+              </span>
+            )}
+            {teachers.length === 0 && (
+              <span className="text-[12px] text-gray-400 italic">No teachers</span>
+            )}
+          </div>
+        );
+      }
     },
     {
       Header: 'Password',
@@ -350,17 +377,17 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
       accessor: 'actions',
       Cell: ({ row }) => {
         const student = row.original;
-        const isDeleted = deletedStudent && deletedStudent.id === student.id;
+        const isInactive = student.status === 'inactive' || student.is_active === false || student.is_active === "False" || student.is_active === "false";
         
         return (
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 
-              if (!isDeleted) {
+              if (!isInactive) {
                 onDelete(student); 
               }
             }} 
-            className={`${isDeleted ? 'hidden' : 'text-red-500 hover:text-red-700'}`}
+            className={`${isInactive ? 'hidden' : 'text-red-500 hover:text-red-700'}`}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -369,7 +396,7 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
         );
       }
     }
-  ], [onDelete, deletedStudent]);
+  ], [onDelete]);
 
   const {
     getTableProps,
@@ -521,28 +548,28 @@ const StudentsTable = ({ data, onDelete, onStudentClick, deletedStudent, onResto
           {page.map((row, rowIndex) => {
             prepareRow(row);
             const student = row.original;
-            const isDeleted = deletedStudent && deletedStudent.id === student.id;
+            const isInactive = student.status === 'inactive' || student.is_active === false || student.is_active === "False" || student.is_active === "false";
             const isEvenRow = rowIndex % 2 === 0;
             
             return (
               <tr 
                 {...row.getRowProps()} 
                 className={`border-b border-[#E0E0E0] h-[54px] ${
-                  isDeleted ? 'bg-[#398AC8] text-white' : 
+                  isInactive ? 'bg-[#398AC8] text-white' : 
                   isEvenRow ? 'bg-white hover:bg-gray-50 cursor-pointer' : 
                   'bg-[#F8F9FA] hover:bg-gray-100 cursor-pointer'
                 }`}
-                onClick={!isDeleted ? () => onStudentClick(student) : undefined}
+                onClick={!isInactive ? () => onStudentClick(student) : undefined}
               >
-                {isDeleted ? (
+                {isInactive ? (
                   <td colSpan={visibleColumns || 1} className="px-6 py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-white text-[14px] leading-[24px] font-normal font-['Poppins']">
-                        {deletedStudent.firstName} {deletedStudent.lastName}'s account has been deactivated. 
+                        {student.firstName} {student.lastName}'s account has been deactivated. 
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            onRestore();
+                            onRestore(student);
                           }} 
                           className="text-white underline ml-2"
                         >
@@ -632,6 +659,7 @@ const StudentsPage = () => {
   const router = useRouter();
   const [pageData, setPageData] = useState({ students: [], teachers: [], subjects: [] });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modal, setModal] = useState({ type: null, isOpen: false });
   const [deletedStudent, setDeletedStudent] = useState(null);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
@@ -649,50 +677,55 @@ const StudentsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Mock data for students
-        const mockStudentsData = {
-          students: [
-            {
-              id: 1,
-              class: 'A',
-              firstName: 'Alexandra',
-              lastName: 'Bander',
-              userName: 'Bloom',
-              email: 'abddf@gmail.com',
-              grade: '4',
-              subjects: ['M4', 'E6'],
-              teachers: 'Alexandra, Ha...',
-              password: 'Password',
-              status: 'active',
-              aptitudeLevel: '2',
-              accountCreated: '20/12/22',
-              lastUpdated: '26/12/22'
-            },
-            {
-              id: 2,
-              class: 'A',
-              firstName: 'Stylianos',
-              lastName: 'Angelakis',
-              userName: 'StyAngel',
-              email: 'stylianos@gmail.com',
-              grade: '4',
-              subjects: ['M4', 'E6'],
-              teachers: 'Doctor Alex',
-              password: 'Password',
-              status: 'deactivated',
-              aptitudeLevel: '3',
-              accountCreated: '15/11/22',
-              lastUpdated: '20/12/22'
-            }
-          ],
-          teachers: ['Doctor Alex', 'Annette Black', 'Kathryn Murphy', 'Jerome Bell', 'Savannah Nguyen', 'Jane Cooper'],
-          subjects: ['Maths', 'English Language', 'Science', 'Geography', 'History']
+        setLoading(true);
+        
+        // Fetch students, teachers, and subjects from API
+        const [studentsResponse, teachersResponse, subjectsResponse] = await Promise.all([
+          api.listStudents(),
+          api.listTeachers(),
+          api.getSubjects()
+        ]);
+
+        // Transform students data to match expected format
+        const students = studentsResponse.data?.results?.map(student => ({
+          id: student.id,
+          class: student.student_class || 'A',
+          firstName: student.first_name,
+          lastName: student.last_name,
+          userName: student.username,
+          email: student.email,
+          grade: student.grade?.toString(),
+          subjects: student.subjects || [],
+          teachers: student.teachers || '',
+          password: 'Password', // Not returned by API for security
+          status: student.is_active === "True" || student.is_active === true ? 'active' : 'inactive',
+          is_active: student.is_active, // Keep original is_active field
+          aptitudeLevel: student.aptitude_level?.toString(),
+          accountCreated: student.created_at ? new Date(student.created_at).toLocaleDateString('en-GB') : '',
+          lastUpdated: student.modified_at ? new Date(student.modified_at).toLocaleDateString('en-GB') : ''
+        })) || [];
+
+        // Transform teachers data
+        const teachers = teachersResponse.map(teacher => teacher.first_name + ' ' + teacher.last_name) || [];
+
+        // Transform subjects data
+        const subjects = subjectsResponse.data?.map(subject => subject.name) || [];
+
+        const pageData = {
+          students,
+          teachers,
+          subjects
         };
         
-        setPageData(mockStudentsData);
-        setFilteredStudents(mockStudentsData.students);
+        setPageData(pageData);
+        setFilteredStudents(students);
+        setError(null);
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        setError("Failed to load students data. Please try again.");
+        // Fallback to empty data on error
+        setPageData({ students: [], teachers: [], subjects: [] });
+        setFilteredStudents([]);
       } finally {
         setLoading(false);
       }
@@ -725,61 +758,125 @@ const StudentsPage = () => {
     setFilterDropdownOpen(false);
   };
 
-  const handleDelete = (studentToDelete) => {
-    const updatedStudent = { ...studentToDelete, status: 'deactivated' };
-    setDeletedStudent(updatedStudent);
-    
-    setPageData(prev => ({
-      ...prev,
-      students: prev.students.map(s => 
-        s.id === studentToDelete.id ? updatedStudent : s
-      )
-    }));
-    setFilteredStudents(prev => prev.map(s => 
-      s.id === studentToDelete.id ? updatedStudent : s
-    ));
-  };
-
-  const handleRestore = () => {
-    if (deletedStudent) {
-      const restoredStudent = { ...deletedStudent, status: 'active' };
+  const handleDelete = async (studentToDelete) => {
+    try {
+      // Toggle student status to inactive
+      const result = await api.toggleStudentStatus(studentToDelete.id, false);
       
-      setPageData(prev => ({
-        ...prev,
-        students: prev.students.map(s => 
-          s.id === deletedStudent.id ? restoredStudent : s
-        )
-      }));
-      setFilteredStudents(prev => prev.map(s => 
-        s.id === deletedStudent.id ? restoredStudent : s
-      ));
-      setDeletedStudent(null);
+      if (result.ok) {
+        const updatedStudent = { 
+          ...studentToDelete, 
+          status: 'inactive',
+          is_active: false
+        };
+        
+        setPageData(prev => ({
+          ...prev,
+          students: prev.students.map(s => 
+            s.id === studentToDelete.id ? updatedStudent : s
+          )
+        }));
+        setFilteredStudents(prev => prev.map(s => 
+          s.id === studentToDelete.id ? updatedStudent : s
+        ));
+      } else {
+        console.error('Failed to deactivate student:', result.error);
+        // You might want to show a toast notification here
+      }
+    } catch (error) {
+      console.error('Error deactivating student:', error);
+      // You might want to show a toast notification here
     }
   };
 
-  const handleAddStudent = (newStudentData) => {
-    const newStudent = {
-      id: pageData.students.length + 1,
-      class: newStudentData.class,
-      firstName: newStudentData.firstName,
-      lastName: newStudentData.lastName,
-      userName: newStudentData.userName,
-      email: newStudentData.email,
-      grade: newStudentData.grade,
-      subjects: newStudentData.subjects,
-      teachers: newStudentData.teachers.join(', '),
-      password: newStudentData.password,
-      status: 'active',
-      aptitudeLevel: newStudentData.aptitudeLevel,
-      accountCreated: new Date().toLocaleDateString(),
-      lastUpdated: new Date().toLocaleDateString()
-    };
-    
-    setPageData(prev => ({
-      ...prev,
-      students: [...prev.students, newStudent]
-    }));
-    setFilteredStudents(prev => [...prev, newStudent]);
+  const handleRestore = async (studentToRestore) => {
+    try {
+      // Toggle student status to active
+      const result = await api.toggleStudentStatus(studentToRestore.id, true);
+      
+      if (result.ok) {
+        const restoredStudent = { 
+          ...studentToRestore, 
+          status: 'active',
+          is_active: true
+        };
+        
+        setPageData(prev => ({
+          ...prev,
+          students: prev.students.map(s => 
+            s.id === studentToRestore.id ? restoredStudent : s
+          )
+        }));
+        setFilteredStudents(prev => prev.map(s => 
+          s.id === studentToRestore.id ? restoredStudent : s
+        ));
+      } else {
+        console.error('Failed to activate student:', result.error);
+        // You might want to show a toast notification here
+      }
+    } catch (error) {
+      console.error('Error activating student:', error);
+      // You might want to show a toast notification here
+    }
+  };
+
+  const handleAddStudent = async (newStudentData) => {
+    try {
+      const result = await api.createStudent({
+        firstName: newStudentData.firstName,
+        lastName: newStudentData.lastName,
+        studentClass: newStudentData.class,
+        grade: newStudentData.grade,
+        username: newStudentData.userName,
+        password: newStudentData.password,
+        email: newStudentData.email,
+        aptitudeLevel: newStudentData.aptitudeLevel
+      });
+
+      if (result.ok && result.body?.data) {
+        const createdStudent = result.body.data;
+        const newStudent = {
+          id: createdStudent.id,
+          class: createdStudent.student_class || newStudentData.class,
+          firstName: createdStudent.first_name,
+          lastName: createdStudent.last_name,
+          userName: createdStudent.username,
+          email: createdStudent.email,
+          grade: createdStudent.grade?.toString(),
+          subjects: createdStudent.subjects || [],
+          teachers: createdStudent.teachers || '',
+          password: 'Password', // Not returned by API for security
+          status: 'active',
+          aptitudeLevel: createdStudent.aptitude_level?.toString(),
+          accountCreated: new Date().toLocaleDateString('en-GB'),
+          lastUpdated: new Date().toLocaleDateString('en-GB')
+        };
+        
+        setPageData(prev => ({
+          ...prev,
+          students: [...prev.students, newStudent]
+        }));
+        setFilteredStudents(prev => [...prev, newStudent]);
+
+        // If teachers were selected, add them to the student
+        if (newStudentData.teachers && newStudentData.teachers.length > 0) {
+          // Get teacher IDs from names (you might need to implement this mapping)
+          // For now, we'll skip this as it requires additional API calls
+        }
+
+        // If subjects were selected, add them to the student
+        if (newStudentData.subjects && newStudentData.subjects.length > 0) {
+          // Get subject IDs from names (you might need to implement this mapping)
+          // For now, we'll skip this as it requires additional API calls
+        }
+      } else {
+        console.error('Failed to create student:', result.body?.error);
+        // You might want to show a toast notification here
+      }
+    } catch (error) {
+      console.error('Error creating student:', error);
+      // You might want to show a toast notification here
+    }
   };
 
   const handleStudentClick = (student) => {
@@ -841,14 +938,76 @@ const StudentsPage = () => {
     setMoreDropdownOpen(false);
   };
 
+  const handleBulkDeactivate = async () => {
+    try {
+      const studentIds = filteredStudents.map(student => student.id);
+      const result = await api.bulkDeactivateStudents(studentIds);
+      
+      if (result.ok) {
+        // Update local state to reflect deactivated status
+        const updatedStudents = filteredStudents.map(student => ({
+          ...student,
+          status: 'inactive'
+        }));
+        
+        setPageData(prev => ({
+          ...prev,
+          students: prev.students.map(student => {
+            const updated = updatedStudents.find(us => us.id === student.id);
+            return updated || student;
+          })
+        }));
+        setFilteredStudents(updatedStudents);
+        setModal({ type: null, isOpen: false });
+      } else {
+        console.error('Failed to bulk deactivate students:', result.error);
+        // You might want to show a toast notification here
+      }
+    } catch (error) {
+      console.error('Error bulk deactivating students:', error);
+      // You might want to show a toast notification here
+    }
+  };
+
   if (loading) {
     return (
       <I18nProvider>
         <Layout>
-          <div className="flex justify-center items-center h-screen">Loading...</div></Layout>
-     </I18nProvider>
-   );
- }
+          <div className="flex justify-center items-center h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#103358] mx-auto mb-4"></div>
+              <p className="text-[#103358]">Loading students...</p>
+            </div>
+          </div>
+        </Layout>
+      </I18nProvider>
+    );
+  }
+
+  if (error) {
+    return (
+      <I18nProvider>
+        <Layout>
+          <div className="flex justify-center items-center h-screen">
+            <div className="text-center">
+              <div className="text-red-500 mb-4">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <p className="text-red-500 mb-4">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-[#103358] text-white rounded-lg hover:bg-[#0a2a4a]"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </Layout>
+      </I18nProvider>
+    );
+  }
 
  return (
    <I18nProvider>
@@ -968,13 +1127,12 @@ const StudentsPage = () => {
 
          {/* Table Section */}
          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-           <StudentsTable 
-             data={filteredStudents} 
-             onDelete={handleDelete}
-             onStudentClick={handleStudentClick}
-             deletedStudent={deletedStudent}
-             onRestore={handleRestore}
-           />
+         <StudentsTable 
+           data={filteredStudents} 
+           onDelete={handleDelete}
+           onStudentClick={handleStudentClick}
+           onRestore={handleRestore}
+         />
          </div>
        </div>
 
@@ -991,6 +1149,7 @@ const StudentsPage = () => {
          isOpen={modal.type === 'deactivate' && modal.isOpen}
          onClose={() => setModal({ isOpen: false, type: null })}
          studentsCount={filteredStudents.length}
+         onDeactivate={handleBulkDeactivate}
        />
        
        <StudentDetailsModal

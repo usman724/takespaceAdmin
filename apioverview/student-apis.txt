@@ -1,0 +1,497 @@
+Student Admin APIs Overview
+
+Base URL: /api/v1/admin/students/
+Auth: Bearer JWT required in Authorization header
+Accept: application/json
+
+========================================
+1. LIST STUDENTS
+========================================
+GET /api/v1/admin/students/
+
+Query Parameters
+- page (integer, optional) — Pagination page number
+- search (string, optional) — Search by name, email, or username
+- grade (integer, optional) — Filter by grade level
+- student_class (string, optional) — Filter by class section
+- aptitude_level (integer, optional) — Filter by aptitude level
+
+Successful Response
+- HTTP 200
+- Shape: { statusCode, data, error }
+  - statusCode (number): 200 on success
+  - error (null | object): null on success
+  - data (object):
+    - count (integer): Total number of students
+    - next (string | null): Next page URL
+    - previous (string | null): Previous page URL
+    - results (array of object):
+      - id (integer): Student ID
+      - first_name (string): Student's first name
+      - last_name (string): Student's last name
+      - email (string): Student's email address
+      - username (string): Student's username
+      - grade (integer): Grade level (1-12)
+      - student_class (string): Class section (A, B, C, etc.)
+      - aptitude_level (integer): Aptitude level (1-4)
+      - subjects (array of string): Subject codes
+      - teachers (array of string): Teacher names
+      - created_at (string): Creation date (DD/MM/YYYY format)
+      - modified_at (string): Last modified date (DD/MM/YYYY format)
+
+Example Request
+curl 'https://dev.takespace.com/api/v1/admin/students/?page=1&grade=10' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'accept: application/json'
+
+Example Success (200)
+{
+  "statusCode": 200,
+  "data": {
+    "count": 10,
+    "next": "http://api.example.com/api/v1/admin/students/?page=2",
+    "previous": null,
+    "results": [
+      {
+        "id": 1,
+        "first_name": "John",
+        "last_name": "Doe",
+        "email": "john.doe@example.com",
+        "username": "john_doe",
+        "grade": 10,
+        "subjects": ["MATH", "PHYSICS", "CHEMISTRY"],
+        "teachers": ["Dr. Smith", "Prof. Johnson"],
+        "created_at": "15/01/2024",
+        "modified_at": "20/01/2024",
+        "aptitude_level": 3,
+        "student_class": "A"
+      }
+    ]
+  },
+  "error": null
+}
+
+========================================
+2. CREATE STUDENT
+========================================
+POST /api/v1/admin/students/
+
+Request Body
+- Content-Type: application/json
+- Schema: StudentCreate
+  - first_name (string, required): Student's first name
+  - last_name (string, required): Student's last name
+  - student_class (string, required): Class section (A, B, C, etc.)
+  - grade (integer, required): Grade level (1-12)
+  - username (string, required): Unique username
+  - password (string, required): Password (must pass Django validation)
+  - email (string, required): Unique email address
+  - aptitude_level (integer, required): Aptitude level (1-4)
+
+Successful Response
+- HTTP 201
+- Shape: { statusCode, data, error }
+  - statusCode (number): 201 on success
+  - error (null | object): null on success
+  - data (object): Created student object
+
+Example Request
+curl -X POST 'https://dev.takespace.com/api/v1/admin/students/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "first_name": "John",
+    "last_name": "Doe",
+    "student_class": "A",
+    "grade": 10,
+    "username": "john_doe",
+    "password": "securepassword123",
+    "email": "john.doe@example.com",
+    "aptitude_level": 3
+  }'
+
+Example Success (201)
+{
+  "statusCode": 201,
+  "data": {
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "username": "john_doe",
+    "grade": 10,
+    "subjects": [],
+    "teachers": [],
+    "created_at": "15/01/2024",
+    "modified_at": "15/01/2024",
+    "aptitude_level": 3,
+    "student_class": "A"
+  },
+  "error": null
+}
+
+========================================
+3. UPDATE STUDENT (FULL)
+========================================
+PUT /api/v1/admin/students/{id}/
+
+Path Parameters
+- id (integer, required) — Student ID
+
+Request Body
+- Content-Type: application/json
+- Schema: StudentUpdate (all fields required)
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X PUT 'https://dev.takespace.com/api/v1/admin/students/123/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "first_name": "John",
+    "last_name": "Smith",
+    "student_class": "B",
+    "grade": 11,
+    "username": "john_smith",
+    "password": "newpassword123",
+    "email": "john.smith@example.com",
+    "aptitude_level": 4
+  }'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+4. UPDATE STUDENT (PARTIAL)
+========================================
+PATCH /api/v1/admin/students/{id}/
+
+Path Parameters
+- id (integer, required) — Student ID
+
+Request Body
+- Content-Type: application/json
+- Schema: StudentUpdate (partial fields)
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X PATCH 'https://dev.takespace.com/api/v1/admin/students/123/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "first_name": "John",
+    "aptitude_level": 4
+  }'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+5. DELETE STUDENT
+========================================
+DELETE /api/v1/admin/students/{id}/
+
+Path Parameters
+- id (integer, required) — Student ID
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X DELETE 'https://dev.takespace.com/api/v1/admin/students/123/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+6. TOGGLE STUDENT STATUS
+========================================
+POST /api/v1/admin/students/{id}/toggle-status/
+
+Path Parameters
+- id (integer, required) — Student ID
+
+Request Body
+- Content-Type: application/json
+- Schema: ToggleStudentStatus
+  - is_active (boolean, required) — Set to true to activate, false to deactivate
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request (Activate Student)
+curl -X POST 'https://dev.takespace.com/api/v1/admin/students/123/toggle-status/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{"is_active": true}'
+
+Example Request (Deactivate Student)
+curl -X POST 'https://dev.takespace.com/api/v1/admin/students/123/toggle-status/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{"is_active": false}'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+7. ADD TEACHERS TO STUDENT
+========================================
+POST /api/v1/admin/students/{id}/teachers/
+
+Path Parameters
+- id (integer, required) — Student ID
+
+Request Body
+- Content-Type: application/json
+- Schema: AddTeachersToStudent
+  - teacher_ids (array of integers, required) — Array of teacher IDs to add
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X POST 'https://dev.takespace.com/api/v1/admin/students/123/teachers/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{"teacher_ids": [1, 2, 3]}'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+8. REMOVE TEACHER FROM STUDENT
+========================================
+DELETE /api/v1/admin/students/{id}/teachers/{teacher_id}/
+
+Path Parameters
+- id (integer, required) — Student ID
+- teacher_id (integer, required) — Teacher ID to remove
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X DELETE 'https://dev.takespace.com/api/v1/admin/students/123/teachers/456/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+9. LIST SUBJECTS
+========================================
+GET /api/v1/admin/students/subjects/
+
+Query Parameters
+- search (string, optional) — Search subjects by name
+
+Successful Response
+- HTTP 200
+- Shape: { statusCode, data, error }
+  - statusCode (number): 200 on success
+  - error (null | object): null on success
+  - data (array): List of subject objects
+    - id (integer): Subject ID
+    - name (string): Subject name
+    - image (string): Subject image URL
+    - images (array of string): Additional image URLs
+    - progress (object):
+      - percentage_of_mastery (number): Mastery percentage
+      - topics_mastered (integer): Number of topics mastered
+      - total_topics (integer): Total number of topics
+      - time_practiced (string): Time practiced (e.g., "25h")
+      - questions_answered (integer): Questions answered
+      - accuracy_percentage (number): Accuracy percentage
+    - status (object):
+      - has_goals (boolean): Whether student has goals set
+      - time_practiced_goal_per_week (integer): Weekly practice goal
+      - topics_mastered_goal_per_week (integer): Weekly topics goal
+      - time_practiced_goal_per_30_days (integer): 30-day practice goal
+      - topics_mastered_goal_per_30_days (integer): 30-day topics goal
+      - desired_exam_mark (number): Desired exam mark
+      - grade_exam_at (string): Exam date (YYYY-MM-DD format)
+    - quest_remaining_days (object):
+      - has_active_quest (boolean): Whether student has active quest
+      - remaining_days (integer): Days remaining in quest
+      - quest_id (integer): Quest ID
+      - opponent_name (string): Opponent name
+    - league (object):
+      - name (string): League name
+      - display_name (string): League display name
+      - level (integer): League level
+    - subject_xp (integer): Subject experience points
+
+Example Request
+curl 'https://dev.takespace.com/api/v1/admin/students/subjects/?search=math' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'accept: application/json'
+
+Example Success (200)
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": 1,
+      "name": "Mathematics",
+      "image": "https://example.com/math.jpg",
+      "images": ["https://example.com/math.jpg", "https://example.com/algebra.jpg"],
+      "progress": {
+        "percentage_of_mastery": 75.5,
+        "topics_mastered": 15,
+        "total_topics": 20,
+        "time_practiced": "25h",
+        "questions_answered": 150,
+        "accuracy_percentage": 85.2
+      },
+      "status": {
+        "has_goals": true,
+        "time_practiced_goal_per_week": 5,
+        "topics_mastered_goal_per_week": 2,
+        "time_practiced_goal_per_30_days": 20,
+        "topics_mastered_goal_per_30_days": 8,
+        "desired_exam_mark": 85.0,
+        "grade_exam_at": "2024-06-15"
+      },
+      "quest_remaining_days": {
+        "has_active_quest": true,
+        "remaining_days": 5,
+        "quest_id": 123,
+        "opponent_name": "Jane Smith"
+      },
+      "league": {
+        "name": "practitioner",
+        "display_name": "Practitioner",
+        "level": 3
+      },
+      "subject_xp": 450
+    }
+  ],
+  "error": null
+}
+
+========================================
+10. ADD SUBJECTS TO STUDENT
+========================================
+POST /api/v1/admin/students/{id}/subjects/
+
+Path Parameters
+- id (integer, required) — Student ID
+
+Request Body
+- Content-Type: application/json
+- Schema: AddSubjectsToStudent
+  - subject_ids (array of integers, required) — Array of subject IDs to add
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X POST 'https://dev.takespace.com/api/v1/admin/students/123/subjects/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{"subject_ids": [1, 2, 3]}'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+11. REMOVE SUBJECT FROM STUDENT
+========================================
+DELETE /api/v1/admin/students/{id}/subjects/{subject_id}/remove/
+
+Path Parameters
+- id (integer, required) — Student ID
+- subject_id (integer, required) — Subject ID to remove
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X DELETE 'https://dev.takespace.com/api/v1/admin/students/123/subjects/456/remove/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+12. DEACTIVATE STUDENTS (BULK)
+========================================
+POST /api/v1/admin/students/deactivate/
+
+Request Body
+- Content-Type: application/json
+- Schema: DeactivateStudents
+  - student_ids (array of integers, required) — Array of student IDs to deactivate
+
+Successful Response
+- HTTP 204
+- No response body (empty response)
+
+Example Request
+curl -X POST 'https://dev.takespace.com/api/v1/admin/students/deactivate/' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{"student_ids": [1, 2, 3, 4, 5]}'
+
+Example Success (204)
+HTTP/1.1 204 No Content
+
+========================================
+FIELD DESCRIPTIONS & VALIDATION RULES
+========================================
+
+Student Fields:
+- id: Student ID (auto-generated)
+- first_name, last_name: Student's name (required)
+- email: Unique email address (required, must be valid email format)
+- username: Unique username (required)
+- grade: Grade level (required, integer between 1-12)
+- student_class: Class section (required, single character: A, B, C, etc.)
+- aptitude_level: Aptitude level (required, integer between 1-4)
+- subjects: Array of subject codes (populated from subject assignments)
+- teachers: Array of teacher names (populated from teacher assignments)
+- created_at, modified_at: Timestamps in DD/MM/YYYY format
+
+Validation Rules:
+- grade: Must be integer between 1-12
+- aptitude_level: Must be integer between 1-4
+- student_class: Must be single character (A, B, C, etc.)
+- password: Must pass Django password validation
+- email: Must be unique and valid email format
+- username: Must be unique
+
+Response Format:
+All responses follow the standardized format:
+{
+  "statusCode": number,
+  "data": object | array | null,
+  "error": null | object
+}
+
+Error Responses:
+- HTTP 400: Bad Request (validation errors)
+- HTTP 401: Authentication credentials were not provided
+- HTTP 403: You do not have permission to perform this action
+- HTTP 404: Student not found
+- HTTP 500: Internal server error
+
+Notes:
+- All endpoints require admin authentication
+- Pagination is supported for list endpoints
+- Timestamps are returned in DD/MM/YYYY format
+- Bulk operations are available for deactivation only
+- Subject and teacher assignments are managed through separate endpoints
