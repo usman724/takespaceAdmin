@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Mock Input component based on the design
 const Input = ({ placeholder, className, icon, iconPosition }) => {
@@ -92,6 +92,19 @@ const useTranslation = () => {
 const Navbar = () => {
   const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userDisplay, setUserDisplay] = useState('');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user') || sessionStorage.getItem('user');
+      if (raw) {
+        const user = JSON.parse(raw);
+        const name = [user?.first_name, user?.last_name].filter(Boolean).join(' ');
+        // Only show full name or username; never show email
+        setUserDisplay(name || user?.username || '');
+      }
+    } catch (_) {}
+  }, []);
 
   const navLinks = [
     { key: 'learning', label: t('learning') },
@@ -162,6 +175,31 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
+          {userDisplay ? (
+            <>
+              <span className="text-sm text-[#103358] whitespace-nowrap">{userDisplay}</span>
+              <button
+                className="ml-2 px-3 py-2 text-sm rounded-md border border-[#103358] text-[#103358] hover:bg-[#E3F3FF]"
+                onClick={() => {
+                  try {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    localStorage.removeItem('user');
+                  } catch (_) {}
+                  try {
+                    sessionStorage.removeItem('access_token');
+                    sessionStorage.removeItem('refresh_token');
+                    sessionStorage.removeItem('user');
+                  } catch (_) {}
+                  window.location.href = '/login';
+                }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <a href="/login" className="px-3 py-2 text-sm rounded-md border border-[#103358] text-[#103358] hover:bg-[#E3F3FF]">Login</a>
+          )}
         </div>
 
         {/* Tablet Navigation (md screens) */}

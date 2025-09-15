@@ -804,6 +804,34 @@ export const api = {
   getAllSubjects,
   getUnits,
   updateSubjectGoals,
+  // --- Auth (student-style) ---
+  async login(username, password) {
+    const url = `${API_BASE_URL}/auth/login/`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password })
+    });
+    const text = await response.text();
+    const json = text ? JSON.parse(text) : null;
+    if (!response.ok) {
+      let message = `HTTP error ${response.status}`;
+      if (json) {
+        if (json.error && json.error.message) message = json.error.message;
+        else if (json.detail) message = json.detail;
+        else if (json.message) message = json.message;
+        else if (json.error) message = json.error;
+      }
+      const err = new Error(message);
+      err.status = response.status;
+      err.body = json;
+      throw err;
+    }
+    return json;
+  },
   // --- Teachers (real) ---
   async listTeachers({ search = '', subjectIds = [] } = {}) {
     try {

@@ -347,7 +347,7 @@ const Sidebar = ({
         className="hidden md:block fixed left-0 bg-white border-r border-gray-200"
         style={{
           top: '100px',
-          height: 'calc(100vh - 100px - var(--footer-height))',
+          height: 'calc(100vh - 100px)',
           width: '250px',
           overflow: 'hidden'
         }}
@@ -386,7 +386,7 @@ const Sidebar = ({
         className="hidden md:block fixed left-0 bg-white border-r border-gray-200 sidebar-scroll"
         style={{
           top: '100px',
-          height: 'calc(100vh - 100px - var(--footer-height))',
+          height: 'calc(100vh - 100px)',
           width: '250px',
           overflowY: 'auto',
           overflowX: 'hidden'
@@ -406,7 +406,7 @@ const Sidebar = ({
             className="absolute left-0 bg-white border-r border-gray-200 shadow-xl"
             style={{
               top: '100px',
-              height: 'calc(100vh - 100px - var(--footer-height))',
+              height: 'calc(100vh - 100px)',
               width: '250px',
               overflowY: 'auto',
               overflowX: 'hidden'

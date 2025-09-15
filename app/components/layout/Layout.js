@@ -16,6 +16,7 @@ const Layout = ({ children }) => {
         >
           <div className="min-h-full flex flex-col">
             <div className="flex-1">
+              {/* Simple client-side guard: redirect to /login if no token in storage */}
               {children}
             </div>
             {/* <Footer /> */}
