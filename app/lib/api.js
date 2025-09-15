@@ -900,7 +900,7 @@ export const api = {
   },
   async removeSubjectFromTeacherAdmin(teacherId, subjectId) {
     try {
-      const url = `${API_BASE_URL.replace('/api/v1', '')}/custom-admin/v1/teachers/${teacherId}/subjects/${subjectId}/remove/`;
+      const url = `${API_BASE_URL.replace('/api/v1', '')}/admin/v1/teachers/${teacherId}/subjects/${subjectId}/remove/`;
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
@@ -1330,7 +1330,7 @@ export const api = {
   // Get Organization Details
   async getOrganizationDetails() {
     try {
-      const url = `${API_BASE_URL}/custom-admin/organization/`;
+      const url = `${API_BASE_URL}/admin/organization/`;
       const data = await apiRequest(url);
       return data;
     } catch (error) {
@@ -1342,7 +1342,7 @@ export const api = {
   // Update Organization Details
   async updateOrganizationDetails(organizationData) {
     try {
-      const url = `${API_BASE_URL}/custom-admin/organization/`;
+      const url = `${API_BASE_URL}/admin/organization/`;
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
@@ -1368,7 +1368,7 @@ export const api = {
   // Update Organization Logo
   async updateOrganizationLogo(logoFile) {
     try {
-      const url = `${API_BASE_URL}/custom-admin/organization/logo/`;
+      const url = `${API_BASE_URL}/admin/organization/logo/`;
       const formData = new FormData();
       formData.append('login_logo', logoFile);
       
@@ -1396,7 +1396,7 @@ export const api = {
   // List Account Contacts
   async getAccountContacts() {
     try {
-      const url = `${API_BASE_URL}/custom-admin/organization/contacts/`;
+      const url = `${API_BASE_URL}/admin/organization/contacts/`;
       const data = await apiRequest(url);
       return data;
     } catch (error) {
@@ -1408,7 +1408,7 @@ export const api = {
   // Update Account Contact
   async updateAccountContact(contactId, contactData) {
     try {
-      const url = `${API_BASE_URL}/custom-admin/organization/contacts/${contactId}/`;
+      const url = `${API_BASE_URL}/admin/organization/contacts/${contactId}/`;
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
@@ -1434,7 +1434,7 @@ export const api = {
   // Update Password
   async updatePassword(passwordData) {
     try {
-      const url = `${API_BASE_URL}/custom-admin/organization/update-password/`;
+      const url = `${API_BASE_URL}/admin/organization/update-password/`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {

@@ -389,7 +389,7 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex flex-wrap gap-5">
+                                <div className="flex flex-wrap gap-5 max-h-[88px] overflow-y-auto pr-2">
                                     {allSubjects.map(subject => (
                                         <div key={subject.id} className="flex items-center gap-3">
                                             <div className="relative">

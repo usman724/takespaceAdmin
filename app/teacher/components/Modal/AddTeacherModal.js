@@ -59,7 +59,7 @@ const AddTeacherModal = forwardRef(({ isOpen, onClose, onSubmit, subjects, width
 
             {/* Modal */}
             <div
-                className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)]"
+                className="relative bg-white rounded-[29.98px] shadow-[0px_0px_8px_2px_rgba(9,161,218,0.1)] max-h-[90vh] overflow-y-auto"
                 style={{ width, height }}
             >
                 {/* Header */}
@@ -147,7 +147,7 @@ const AddTeacherModal = forwardRef(({ isOpen, onClose, onSubmit, subjects, width
                         <h3 className="text-[18px] font-medium text-[#398AC8] leading-[24px] font-['Poppins'] mb-4">
                             Subjects
                         </h3>
-                        <div className="flex gap-5">
+                        <div className="flex flex-wrap gap-5 max-h-[140px] overflow-y-auto pr-2">
                             {subjects.map(subject => (
                                 <div key={subject} className="flex items-center gap-3">
                                     <div className="relative">
