@@ -471,7 +471,7 @@ const fetcher = (data) => {
 
 // Real API functions
 const API_BASE_URL = 'https://dev.takespace.com/api/v1';
-const FIXED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3ODQzMzIzLCJpYXQiOjE3NTc3NTY5MjMsImp0aSI6IjViODZhMTdjNDdlNzRjOTM5ZGJhMGNjN2UzNjkzNzJmIiwidXNlcl9pZCI6MX0.zi1ElASZUlbBDyVNjNZ2H2Wi22DDYGH1hCA1jpoPwrE';
+const FIXED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3OTk4MjE2LCJpYXQiOjE3NTc5MTE4MTYsImp0aSI6IjExYTkyZTMzMDViYjQ1ZTBhNDQ0ZDhjZGI5NWQyMDM5IiwidXNlcl9pZCI6MX0.vkvkwBRKQ8yInPSylYU-ovVfuSzYi9gXyiLn0QVQofY';
 
 const apiRequest = async (url, options = {}) => {
   const response = await fetch(url, {
@@ -1276,6 +1276,210 @@ export const api = {
     } catch (error) {
       console.error('Error fetching student details:', error);
       throw error;
+    }
+  },
+
+  // --- Organization API Functions ---
+  
+  // Get Organization Details
+  async getOrganizationDetails() {
+    try {
+      const url = `${API_BASE_URL}/custom-admin/organization/`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching organization details:', error);
+      throw error;
+    }
+  },
+
+  // Update Organization Details
+  async updateOrganizationDetails(organizationData) {
+    try {
+      const url = `${API_BASE_URL}/custom-admin/organization/`;
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
+        },
+        body: JSON.stringify(organizationData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error updating organization details:', error);
+      throw error;
+    }
+  },
+
+  // Update Organization Logo
+  async updateOrganizationLogo(logoFile) {
+    try {
+      const url = `${API_BASE_URL}/custom-admin/organization/logo/`;
+      const formData = new FormData();
+      formData.append('login_logo', logoFile);
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error updating organization logo:', error);
+      throw error;
+    }
+  },
+
+  // List Account Contacts
+  async getAccountContacts() {
+    try {
+      const url = `${API_BASE_URL}/custom-admin/organization/contacts/`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching account contacts:', error);
+      throw error;
+    }
+  },
+
+  // Update Account Contact
+  async updateAccountContact(contactId, contactData) {
+    try {
+      const url = `${API_BASE_URL}/custom-admin/organization/contacts/${contactId}/`;
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
+        },
+        body: JSON.stringify(contactData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error updating account contact:', error);
+      throw error;
+    }
+  },
+
+  // Update Password
+  async updatePassword(passwordData) {
+    try {
+      const url = `${API_BASE_URL}/custom-admin/organization/update-password/`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
+        },
+        body: JSON.stringify(passwordData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error updating password:', error);
+      throw error;
+    }
+  },
+
+  // --- Leaderboard API Functions ---
+  
+  // Create Leaderboard
+  async createLeaderboard({ name, type, subjectIds, gradeIds, startTime, endTime }) {
+    try {
+      const url = `${API_BASE_URL}/admin/leaderboards/`;
+      const body = {
+        name,
+        type,
+        subject_ids: subjectIds,
+        grade_ids: gradeIds,
+        start_time: startTime,
+        end_time: endTime
+      };
+
+      // Debug: Log the actual API payload
+      console.log('API Payload being sent:', JSON.stringify(body, null, 2));
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
+        },
+        body: JSON.stringify(body),
+      });
+      
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json') ? await response.json() : null;
+      
+      return { ok: response.ok, status: response.status, body: payload };
+    } catch (error) {
+      console.error('Error creating leaderboard:', error);
+      return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
+    }
+  },
+
+  // Get Leaderboard by ID
+  async getLeaderboard(leaderboardId) {
+    try {
+      const url = `${API_BASE_URL}/admin/leaderboards/${leaderboardId}/`;
+      const data = await apiRequest(url);
+      return data;
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      throw error;
+    }
+  },
+
+  // End Leaderboard Early
+  async endLeaderboard(leaderboardId) {
+    try {
+      const url = `${API_BASE_URL}/admin/leaderboards/${leaderboardId}/end/`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
+        },
+      });
+      
+      return { ok: response.ok, status: response.status };
+    } catch (error) {
+      console.error('Error ending leaderboard:', error);
+      return { ok: false, status: 0, error: { message: String(error?.message || 'Network error') } };
     }
   },
 };

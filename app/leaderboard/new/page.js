@@ -1,37 +1,148 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Layout from "../../components/layout/Layout";
 import I18nProvider from "../../components/providers/I18nProvider";
 import Button from "../../components/ui/Button";
+import { api } from "../../lib/api";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import SuccessMessage from "../../components/common/SuccessMessage";
 
 export default function CreateLeaderboardPage() {
-  const [asClasses, setAsClasses] = useState(true);
-  const [asIndividuals, setAsIndividuals] = useState(false);
+  const router = useRouter();
+  const [asClasses, setAsClasses] = useState(false);
+  const [asIndividuals, setAsIndividuals] = useState(true);
 
-  const [gradesOpen, setGradesOpen] = useState(true);
-  const [selectedGrades, setSelectedGrades] = useState(["Primary 5"]);
+  const [gradesOpen, setGradesOpen] = useState(false);
+  const [selectedGrades, setSelectedGrades] = useState([]);
 
-  const [subjectsOpen, setSubjectsOpen] = useState(true);
-  const [selectedSubjects, setSelectedSubjects] = useState(["Maths"]);
+  const [subjectsOpen, setSubjectsOpen] = useState(false);
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
 
-  const toggleGrade = (g) => {
-    setSelectedGrades((prev) =>
-      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
-    );
-  };
-
-  const toggleSubject = (s) => {
-    setSelectedSubjects((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
-    );
-  };
-
-  // Dates and times
-  const [startDate, setStartDate] = useState("2024-10-15");
+  // Form state
+  const [leaderboardName, setLeaderboardName] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [startTimeOpt, setStartTimeOpt] = useState("Now");
-  const [endDate, setEndDate] = useState("2024-10-22");
-  const [endTime, setEndTime] = useState("19:00"); // 24h format
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("19:00");
+  
+  // API state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  // Grade and subject options (you might want to fetch these from API)
+  const gradeOptions = [
+    { id: 1, name: "Primary 1" },
+    { id: 2, name: "Primary 2" },
+    { id: 3, name: "Primary 3" },
+    { id: 4, name: "Primary 4" },
+    { id: 5, name: "Primary 5" },
+    { id: 6, name: "Primary 6" },
+  ];
+
+  const subjectOptions = [
+    { id: 1, name: "Maths" },
+    { id: 2, name: "Science" },
+    { id: 3, name: "English" },
+    { id: 4, name: "Geography" },
+  ];
+
+  const toggleGrade = (gradeId) => {
+    setSelectedGrades((prev) =>
+      prev.includes(gradeId) ? prev.filter((x) => x !== gradeId) : [...prev, gradeId]
+    );
+  };
+
+  const toggleSubject = (subjectId) => {
+    setSelectedSubjects((prev) =>
+      prev.includes(subjectId) ? prev.filter((x) => x !== subjectId) : [...prev, subjectId]
+    );
+  };
+
+  // Set default dates
+  useEffect(() => {
+    const today = new Date();
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    setStartDate(today.toISOString().split('T')[0]);
+    setEndDate(nextWeek.toISOString().split('T')[0]);
+  }, []);
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!leaderboardName.trim()) {
+      setError('Please enter a leaderboard name');
+      return;
+    }
+    
+    if (selectedGrades.length === 0) {
+      setError('Please select at least one grade');
+      return;
+    }
+    
+    if (selectedSubjects.length === 0) {
+      setError('Please select at least one subject');
+      return;
+    }
+    
+    if (!startDate || !endDate) {
+      setError('Please select start and end dates');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(false);
+
+      // Calculate start and end times
+      let startTime, endTime;
+      
+      if (startTimeOpt === "Now") {
+        startTime = new Date().toISOString();
+      } else {
+        const [hours, minutes] = startTimeOpt.split(':').map(Number);
+        const startDateTime = new Date(startDate);
+        startDateTime.setHours(hours, minutes, 0, 0);
+        startTime = startDateTime.toISOString();
+      }
+      
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
+      endTime = endDateTime.toISOString();
+
+      // Create leaderboard
+      const result = await api.createLeaderboard({
+        name: leaderboardName,
+        type: asIndividuals ? 'individuals' : 'classes',
+        subjectIds: selectedSubjects,
+        gradeIds: selectedGrades,
+        startTime,
+        endTime
+      });
+
+      if (result.ok) {
+        setSuccess(true);
+        // Redirect to the created leaderboard after 2 seconds
+        setTimeout(() => {
+          router.push(`/leaderboard?id=${result.body.data.id}`);
+        }, 2000);
+      } else {
+        setError(result.body?.error?.message || 'Failed to create leaderboard');
+      }
+    } catch (err) {
+      console.error('Error creating leaderboard:', err);
+      setError('Failed to create leaderboard');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <I18nProvider>
       <Layout>
@@ -45,63 +156,77 @@ export default function CreateLeaderboardPage() {
             </p>
           </header>
 
-          {/* Leaderboard type */}
-          <Section title="Select Leaderboard type">
-            <div className="space-y-4">
-              <label className="flex items-center gap-3 text-[#103358]">
-                <input type="checkbox" checked={asClasses} onChange={() => setAsClasses((v) => !v)} className="w-5 h-5 rounded border-[#9EC7EA] text-[#398AC8] focus:ring-[#398AC8]" />
-                Compete as classes
-              </label>
-              <label className="flex items-center gap-3 text-[#103358]">
-                <input type="checkbox" checked={asIndividuals} onChange={() => setAsIndividuals((v) => !v)} className="w-5 h-5 rounded border-[#9EC7EA] text-[#398AC8] focus:ring-[#398AC8]" />
-                Compete as individuals
-              </label>
-            </div>
-          </Section>
+          {/* Error and Success Messages */}
+          {error && <ErrorMessage message={error} />}
+          {success && <SuccessMessage message="Leaderboard created successfully! Redirecting..." />}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Section title="Select Who Should Participate">
-              <Dropdown
-                open={gradesOpen}
-                onToggle={() => setGradesOpen((v) => !v)}
-                label="All Grades"
-              >
-                {[
-                  "Primary 1",
-                  "Primary 2",
-                  "Primary 3",
-                  "Primary 4",
-                  "Primary 5",
-                ].map((g) => (
-                  <CheckboxRow
-                    key={g}
-                    label={g}
-                    checked={selectedGrades.includes(g)}
-                    onToggle={() => toggleGrade(g)}
+          <form onSubmit={handleSubmit}>
+            {/* Leaderboard type */}
+            <Section title="Select Leaderboard type">
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 text-[#103358]">
+                  <input 
+                    type="radio" 
+                    name="type" 
+                    checked={asClasses} 
+                    onChange={() => {
+                      setAsClasses(true);
+                      setAsIndividuals(false);
+                    }} 
+                    className="w-5 h-5 rounded border-[#9EC7EA] text-[#398AC8] focus:ring-[#398AC8]" 
                   />
-                ))}
-              </Dropdown>
-            </Section>
-            <Section title="Select Subjects">
-              <Dropdown
-                open={subjectsOpen}
-                onToggle={() => setSubjectsOpen((v) => !v)}
-                label="All Subjects"
-              >
-                {[
-                  "Maths",
-                  "English Language",
-                ].map((s) => (
-                  <CheckboxRow
-                    key={s}
-                    label={s}
-                    checked={selectedSubjects.includes(s)}
-                    onToggle={() => toggleSubject(s)}
+                  Compete as classes
+                </label>
+                <label className="flex items-center gap-3 text-[#103358]">
+                  <input 
+                    type="radio" 
+                    name="type" 
+                    checked={asIndividuals} 
+                    onChange={() => {
+                      setAsIndividuals(true);
+                      setAsClasses(false);
+                    }} 
+                    className="w-5 h-5 rounded border-[#9EC7EA] text-[#398AC8] focus:ring-[#398AC8]" 
                   />
-                ))}
-              </Dropdown>
+                  Compete as individuals
+                </label>
+              </div>
             </Section>
-          </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Section title="Select Who Should Participate">
+                <Dropdown
+                  open={gradesOpen}
+                  onToggle={() => setGradesOpen((v) => !v)}
+                  label={selectedGrades.length === 0 ? "Select Grades" : `${selectedGrades.length} grade(s) selected`}
+                >
+                  {gradeOptions.map((grade) => (
+                    <CheckboxRow
+                      key={grade.id}
+                      label={grade.name}
+                      checked={selectedGrades.includes(grade.id)}
+                      onToggle={() => toggleGrade(grade.id)}
+                    />
+                  ))}
+                </Dropdown>
+              </Section>
+              <Section title="Select Subjects">
+                <Dropdown
+                  open={subjectsOpen}
+                  onToggle={() => setSubjectsOpen((v) => !v)}
+                  label={selectedSubjects.length === 0 ? "Select Subjects" : `${selectedSubjects.length} subject(s) selected`}
+                >
+                  {subjectOptions.map((subject) => (
+                    <CheckboxRow
+                      key={subject.id}
+                      label={subject.name}
+                      checked={selectedSubjects.includes(subject.id)}
+                      onToggle={() => toggleSubject(subject.id)}
+                    />
+                  ))}
+                </Dropdown>
+              </Section>
+            </div>
 
           <Section title="Select a Start & And Date">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -122,13 +247,26 @@ export default function CreateLeaderboardPage() {
             </div>
           </Section>
 
-          <Section title="Name Leaderboard">
-            <input className="border rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-[#398AC8] focus:border-[#398AC8] text-black" defaultValue="5 Steps Board Math Primary 5 Individuals" />
-          </Section>
+            <Section title="Name Leaderboard">
+              <input 
+                className="border rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-[#398AC8] focus:border-[#398AC8] text-black" 
+                value={leaderboardName}
+                onChange={(e) => setLeaderboardName(e.target.value)}
+                placeholder="Enter leaderboard name"
+                required
+              />
+            </Section>
 
-          <div className="mt-8">
-            <Button size="lg">Create</Button>
-          </div>
+            <div className="mt-8">
+              <Button 
+                size="lg" 
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? <LoadingSpinner /> : 'Create Leaderboard'}
+              </Button>
+            </div>
+          </form>
         </div>
       </Layout>
     </I18nProvider>

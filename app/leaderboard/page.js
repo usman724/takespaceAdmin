@@ -2,11 +2,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Layout from '../components/layout/Layout';
 import I18nProvider from '../components/providers/I18nProvider';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
+import { api } from '../lib/api';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorMessage from '../components/common/ErrorMessage';
 
 // Simple countdown hook for demo purposes
 function useCountdown(targetDate) {
@@ -31,32 +34,128 @@ function useCountdown(targetDate) {
   return { days, hours, minutes, seconds };
 }
 
-const podiumUsers = [
-  { id: 2, name: 'Eleanor Pena', xp: 504, place: 2 },
-  { id: 1, name: 'Ralph Edwards', xp: 630, place: 1 },
-  { id: 3, name: 'Kathryn Murphy', xp: 420, place: 3 },
-];
-
-const leaderboardRows = Array.from({ length: 14 }).map((_, index) => {
-  const rank = index + 1;
-  return {
-    rank,
-    student: 'Entertaining Giant Pandas',
-    progress: 'Avg 51 questions answered',
-    teacher: 'Binte Mohd Faisal',
-    grade: rank === 1 ? 'P5' : rank === 2 ? 'P6' : rank === 3 ? 'P2' : 'P1',
-  };
-});
+// Helper function to format leaderboard data for display
+const formatLeaderboardData = (leaderboardData) => {
+  if (!leaderboardData?.data?.students) return { podiumUsers: [], leaderboardRows: [] };
+  
+  const students = leaderboardData.data.students;
+  
+  // Sort students by score (descending) and take top 3 for podium
+  const sortedStudents = [...students].sort((a, b) => parseInt(b.score) - parseInt(a.score));
+  const top3 = sortedStudents.slice(0, 3);
+  
+  const podiumUsers = top3.map((student, index) => ({
+    id: student.full_name,
+    name: student.full_name,
+    xp: parseInt(student.score),
+    place: index + 1
+  }));
+  
+  // Format all students for leaderboard rows
+  const leaderboardRows = sortedStudents.map((student, index) => ({
+    rank: index + 1,
+    student: student.full_name,
+    progress: `Score: ${student.score}`,
+    teacher: 'N/A', // Not provided in API response
+    grade: student.year || 'N/A'
+  }));
+  
+  return { podiumUsers, leaderboardRows };
+};
 
 export default function LeaderboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showEndModal, setShowEndModal] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [viewMode, setViewMode] = useState('group'); // 'individual' | 'group'
+  const [leaderboardData, setLeaderboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [ending, setEnding] = useState(false);
 
-  // Target a countdown date ~4 days from now to match the mock
-  const targetDate = useMemo(() => Date.now() + 4 * 24 * 60 * 60 * 1000 + 48 * 60 * 1000 + 53 * 1000, []);
+  // Get leaderboard ID from URL params or use default
+  const leaderboardId = searchParams.get('id') || '11'; // Default to 11 for testing
+
+  // Fetch leaderboard data
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.getLeaderboard(leaderboardId);
+        setLeaderboardData(data);
+      } catch (err) {
+        console.error('Error fetching leaderboard:', err);
+        setError('Failed to load leaderboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [leaderboardId]);
+
+  // Calculate countdown from leaderboard end time
+  const targetDate = useMemo(() => {
+    if (leaderboardData?.data?.end_time) {
+      return new Date(leaderboardData.data.end_time).getTime();
+    }
+    // Fallback to mock date
+    return Date.now() + 4 * 24 * 60 * 60 * 1000 + 48 * 60 * 1000 + 53 * 1000;
+  }, [leaderboardData]);
+  
   const { days, hours, minutes, seconds } = useCountdown(targetDate);
+
+  // Format data for display
+  const { podiumUsers, leaderboardRows } = useMemo(() => {
+    return formatLeaderboardData(leaderboardData);
+  }, [leaderboardData]);
+
+  // Handle ending leaderboard
+  const handleEndLeaderboard = async () => {
+    try {
+      setEnding(true);
+      const result = await api.endLeaderboard(leaderboardId);
+      if (result.ok) {
+        // Refresh leaderboard data
+        const updatedData = await api.getLeaderboard(leaderboardId);
+        setLeaderboardData(updatedData);
+        setShowEndModal(false);
+      } else {
+        setError('Failed to end leaderboard');
+      }
+    } catch (err) {
+      console.error('Error ending leaderboard:', err);
+      setError('Failed to end leaderboard');
+    } finally {
+      setEnding(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <I18nProvider>
+        <Layout>
+          <div className="flex justify-center items-center min-h-screen">
+            <LoadingSpinner />
+          </div>
+        </Layout>
+      </I18nProvider>
+    );
+  }
+
+  if (error) {
+    return (
+      <I18nProvider>
+        <Layout>
+          <div className="flex justify-center items-center min-h-screen">
+            <ErrorMessage message={error} />
+          </div>
+        </Layout>
+      </I18nProvider>
+    );
+  }
 
   return (
     <I18nProvider>
@@ -70,7 +169,9 @@ export default function LeaderboardPage() {
               {/* Header */}
               <div className="mb-6 sm:mb-8">
                 <h1 className="text-[34px] sm:text-[44px] xl:text-[62px] leading-[1] font-semibold text-[#103358]">Leaderboard</h1>
-                <p className="text-[18px] sm:text-[28px] xl:text-[38px] leading-[1] text-[#103358] mt-1">5Steps Board 1</p>
+                <p className="text-[18px] sm:text-[28px] xl:text-[38px] leading-[1] text-[#103358] mt-1">
+                  {leaderboardData?.data?.name || 'Loading...'}
+                </p>
                 {/* dots */}
                 <div className="mt-4 flex items-center gap-2">
                   <span className="w-[11px] h-[11px] rounded-full bg-[#103358]" />
@@ -183,8 +284,13 @@ export default function LeaderboardPage() {
 
               {/* Right: End early button */}
               <div className="flex justify-center md:justify-end">
-                <Button size="lg" className="h-[58px] w-[180px] rounded-[14px]" onClick={() => setShowEndModal(true)}>
-                  End Early
+                <Button 
+                  size="lg" 
+                  className="h-[58px] w-[180px] rounded-[14px]" 
+                  onClick={() => setShowEndModal(true)}
+                  disabled={ending || leaderboardData?.data?.manually_ended === 'True'}
+                >
+                  {ending ? 'Ending...' : leaderboardData?.data?.manually_ended === 'True' ? 'Ended' : 'End Early'}
                 </Button>
               </div>
 
@@ -261,8 +367,23 @@ export default function LeaderboardPage() {
             <div className="text-2xl sm:text-3xl font-bold text-[#103358]">End Leaderboard!</div>
             <p className="mt-3 text-[#103358]/80">Are you sure want to end this leaderboard early?</p>
             <div className="mt-6 space-y-3">
-              <Button size="lg" className="w-full" onClick={() => setShowEndModal(false)}>End</Button>
-              <Button size="lg" variant="outline" className="w-full" onClick={() => setShowEndModal(false)}>Cancel</Button>
+              <Button 
+                size="lg" 
+                className="w-full" 
+                onClick={handleEndLeaderboard}
+                disabled={ending}
+              >
+                {ending ? 'Ending...' : 'End'}
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => setShowEndModal(false)}
+                disabled={ending}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         </Modal>

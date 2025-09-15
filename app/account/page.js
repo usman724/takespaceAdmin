@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Modal from '../components/ui/Modal';
 import Layout from '../components/layout/Layout';
+import { api } from '../lib/api';
 
 const sectionLinkId = (label) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
@@ -128,6 +129,23 @@ const TableRow = ({ values, last = false }) => (
 
 export default function AccountPage() {
   const [selected, setSelected] = useState(null); // null => show all sections on load
+  
+  // Organization data state
+  const [organizationData, setOrganizationData] = useState({
+    current_school_year_first_day: '',
+    next_school_year_first_day: '',
+    opening_hours: '08:00:00',
+    closing_hours: '17:00:00',
+    timezone: 'Asia/Singapore',
+    practice_time_per_week_in_hours: 5,
+    topics_mastered_per_week: 5,
+    desired_mark: 75.0,
+    login_url_name: '',
+    login_welcome_header: '',
+    login_welcome_message: ''
+  });
+
+  // UI state
   const [currentYearDate, setCurrentYearDate] = useState('');
   const [nextYearDate, setNextYearDate] = useState('');
   const [tz, setTz] = useState('GMT + 08:00 Singapore');
@@ -142,15 +160,18 @@ export default function AccountPage() {
   const currentDateRef = useRef(null);
   const nextDateRef = useRef(null);
 
-  // Seed JSON data (can be replaced by API call later)
-  const [contacts] = useState([
-    { name: 'Alexander  Kunzetsov', email: 'doctorkunzetsov@gmail.com', phone: '+6589878700005', role: 'Account owner' }
-  ]);
-
+  // API data state
+  const [contacts, setContacts] = useState([]);
   const [subscriptions] = useState([
     { purchasedAccess: '175 for 5 Steps Syllabus', allocatedTo: 'Grades 1- 10', licensesUsed: '165 of 175', note: '' },
     { purchasedAccess: '', allocatedTo: '', licensesUsed: '165 of 175', note: 'Licenses Used' }
   ]);
+
+  // Loading and error states
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Upload modal state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -158,13 +179,7 @@ export default function AccountPage() {
 
   // Welcome message modal state
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
-  const [welcomeMessage, setWelcomeMessage] = useState(`5 Steps Academy is an accelerated learning school in Singapore.
-
-5 Steps' students break Singapore records in PSLE, O-level and A-level exams.
-
-Math Pilots provides comprehensive, MOE syllabus-aligned Maths programs offering unlimited practice in thousands of must-know skills.
-
-Practice and excel with 5 Steps!`);
+  const [welcomeMessage, setWelcomeMessage] = useState('');
 
   // Change password modal
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
@@ -172,21 +187,169 @@ Practice and excel with 5 Steps!`);
   const [newPassword, setNewPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
 
+  // Contact editing state
+  const [editingContact, setEditingContact] = useState(null);
+  const [contactFormData, setContactFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    organization_role: ''
+  });
+
+  // Load organization data on component mount
+  useEffect(() => {
+    loadOrganizationData();
+    loadContacts();
+  }, []);
+
+  const loadOrganizationData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.getOrganizationDetails();
+      
+      if (response.data) {
+        setOrganizationData(response.data);
+        
+        // Update UI state with API data
+        if (response.data.current_school_year_first_day) {
+          const currentDate = new Date(response.data.current_school_year_first_day);
+          setCurrentYearDate(currentDate.toISOString().split('T')[0]);
+        }
+        if (response.data.next_school_year_first_day) {
+          const nextDate = new Date(response.data.next_school_year_first_day);
+          setNextYearDate(nextDate.toISOString().split('T')[0]);
+        }
+        
+        setTz(response.data.timezone || 'GMT + 08:00 Singapore');
+        setGoalPractice(response.data.practice_time_per_week_in_hours?.toString() || '5');
+        setGoalTopics(response.data.topics_mastered_per_week?.toString() || '5');
+        setGoalMark(response.data.desired_mark?.toString() || '75');
+        setPageName(response.data.login_url_name || '');
+        setWelcomeMessage(response.data.login_welcome_message || '');
+      }
+    } catch (err) {
+      console.error('Error loading organization data:', err);
+      setError('Failed to load organization data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadContacts = async () => {
+    try {
+      const response = await api.getAccountContacts();
+      if (response.data) {
+        setContacts(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading contacts:', err);
+    }
+  };
+
+  const saveOrganizationData = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      
+      const dataToSave = {
+        ...organizationData,
+        current_school_year_first_day: currentYearDate ? new Date(currentYearDate).toISOString() : organizationData.current_school_year_first_day,
+        next_school_year_first_day: nextYearDate ? new Date(nextYearDate).toISOString() : organizationData.next_school_year_first_day,
+        practice_time_per_week_in_hours: parseInt(goalPractice) || organizationData.practice_time_per_week_in_hours,
+        topics_mastered_per_week: parseInt(goalTopics) || organizationData.topics_mastered_per_week,
+        desired_mark: parseFloat(goalMark) || organizationData.desired_mark,
+        login_url_name: pageName || organizationData.login_url_name,
+        login_welcome_message: welcomeMessage || organizationData.login_welcome_message
+      };
+
+      await api.updateOrganizationDetails(dataToSave);
+      setSuccessMessage('Organization details updated successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error saving organization data:', err);
+      setError('Failed to save organization data');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (file) => {
+    try {
+      setSaving(true);
+      setError(null);
+      await api.updateOrganizationLogo(file);
+      setSuccessMessage('Logo updated successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      setError('Failed to upload logo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleContactUpdate = async (contactId, contactData) => {
+    try {
+      setSaving(true);
+      setError(null);
+      await api.updateAccountContact(contactId, contactData);
+      setSuccessMessage('Contact updated successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      loadContacts(); // Reload contacts
+    } catch (err) {
+      console.error('Error updating contact:', err);
+      setError('Failed to update contact');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (newPassword !== repeatPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      setError(null);
+      await api.updatePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: repeatPassword
+      });
+      setSuccessMessage('Password updated successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setIsPasswordOpen(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setRepeatPassword('');
+    } catch (err) {
+      console.error('Error updating password:', err);
+      setError('Failed to update password');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const onBrowseFiles = (files) => {
     const mapped = Array.from(files).map((f) => ({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name: f.name,
       size: f.size,
       progress: 0,
-      status: 'uploading'
+      status: 'uploading',
+      file: f
     }));
     setUploadFiles((prev) => [...prev, ...mapped]);
-    // Simulate progress deterministically to 100%
-    mapped.forEach((file, idx) => {
+    
+    // Handle actual file upload
+    mapped.forEach((fileObj, idx) => {
       const interval = setInterval(() => {
         setUploadFiles((prev) =>
           prev.map((item) =>
-            item.id === file.id
+            item.id === fileObj.id
               ? {
                   ...item,
                   progress: Math.min(100, item.progress + 8),
@@ -196,12 +359,45 @@ Practice and excel with 5 Steps!`);
           )
         );
       }, 150);
-      // Hard stop once complete
-      setTimeout(() => clearInterval(interval), 2500 + idx * 200);
+      
+      // Upload the file when progress reaches 100%
+      setTimeout(() => {
+        clearInterval(interval);
+        if (fileObj.file) {
+          handleLogoUpload(fileObj.file);
+        }
+      }, 2500 + idx * 200);
     });
   };
 
   const removeUpload = (i) => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i));
+
+  const startEditingContact = (contact) => {
+    setEditingContact(contact.id);
+    setContactFormData({
+      full_name: contact.full_name,
+      email: contact.email,
+      phone: contact.phone,
+      organization_role: contact.organization_role
+    });
+  };
+
+  const saveContactEdit = () => {
+    if (editingContact) {
+      handleContactUpdate(editingContact, contactFormData);
+      setEditingContact(null);
+    }
+  };
+
+  const cancelContactEdit = () => {
+    setEditingContact(null);
+    setContactFormData({
+      full_name: '',
+      email: '',
+      phone: '',
+      organization_role: ''
+    });
+  };
 
   return (
     <Layout>
@@ -233,15 +429,40 @@ Practice and excel with 5 Steps!`);
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm p-5 sm:p-8 md:p-10">
-           
+            {/* Error and Success Messages */}
+            {error && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+            {successMessage && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-green-600 text-sm">{successMessage}</p>
+              </div>
+            )}
 
-            {/* First Day Of School */
-            }
-            {(!selected || selected === 'First Day Of School') && (
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-[#103358]">Loading organization data...</div>
+              </div>
+            )}
+
+            {/* First Day Of School */}
+            {!loading && (!selected || selected === 'First Day Of School') && (
             <section id={sectionLinkId('First Day Of School')} className="mb-8">
-              <h3 className="text-[#103358] text-lg font-semibold mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                First Day Of School
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[#103358] text-lg font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  First Day Of School
+                </h3>
+                <button
+                  onClick={saveOrganizationData}
+                  disabled={saving}
+                  className="bg-[#398AC8] text-white px-4 py-2 rounded-md text-sm hover:bg-[#2c6a9a] disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="text-[#4F4F4F] text-sm mb-2">Current school year (2025)</div>
@@ -286,45 +507,91 @@ Practice and excel with 5 Steps!`);
             {selected == null && <Divider />}
 
             {/* Time Zone */}
-            {(!selected || selected === 'Time Zone') && (
+            {!loading && (!selected || selected === 'Time Zone') && (
             <section id={sectionLinkId('Time Zone')} className="py-8">
-              <h3 className="text-[#103358] text-lg font-semibold mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Time Zone
-              </h3>
-              <div className="text-[#4F4F4F] text-sm mb-2">GMT + 08:00</div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[#103358] text-lg font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Time Zone
+                </h3>
+                <button
+                  onClick={saveOrganizationData}
+                  disabled={saving}
+                  className="bg-[#398AC8] text-white px-4 py-2 rounded-md text-sm hover:bg-[#2c6a9a] disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+              <div className="text-[#4F4F4F] text-sm mb-2">Current: {organizationData.timezone}</div>
               <div className="relative w-full max-w-[324px] p-3">
-                <select value={tz} onChange={(e)=>setTz(e.target.value)} className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black">
-                  <option>GMT + 08:00 Singapore</option>
-                  <option>GMT + 07:00 Bangkok</option>
-                  <option>GMT + 05:30 India</option>
+                <select 
+                  value={tz} 
+                  onChange={(e) => {
+                    setTz(e.target.value);
+                    setOrganizationData(prev => ({ ...prev, timezone: e.target.value }));
+                  }} 
+                  className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black"
+                >
+                  <option value="Asia/Singapore">GMT + 08:00 Singapore</option>
+                  <option value="Asia/Bangkok">GMT + 07:00 Bangkok</option>
+                  <option value="Asia/Kolkata">GMT + 05:30 India</option>
                 </select>
-               
               </div>
             </section>
             )}
             {selected == null && <Divider />}
 
             {/* Goals */}
-            {(!selected || selected === 'Goals') && (
+            {!loading && (!selected || selected === 'Goals') && (
             <section id={sectionLinkId('Goals')} className="py-8">
-              <h3 className="text-[#103358] text-lg font-semibold mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Goals
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[#103358] text-lg font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Goals
+                </h3>
+                <button
+                  onClick={saveOrganizationData}
+                  disabled={saving}
+                  className="bg-[#398AC8] text-white px-4 py-2 rounded-md text-sm hover:bg-[#2c6a9a] disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <div className="text-[#103358] font-semibold mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Practice Time</div>
-                  <div className="text-[#4F4F4F] text-sm mb-2">Per week, in hours</div>
-                  <input value={goalPractice} onChange={(e)=>setGoalPractice(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
+                  <div className="text-[#4F4F4F] text-sm mb-2">Per week, in hours (1-168)</div>
+                  <input 
+                    type="number"
+                    min="1"
+                    max="168"
+                    value={goalPractice} 
+                    onChange={(e)=>setGoalPractice(e.target.value)} 
+                    className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" 
+                  />
                 </div>
                 <div>
                   <div className="text-[#103358] font-semibold mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Topics Mastered</div>
-                  <div className="text-[#4F4F4F] text-sm mb-2">Per week</div>
-                  <input value={goalTopics} onChange={(e)=>setGoalTopics(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
+                  <div className="text-[#4F4F4F] text-sm mb-2">Per week (1-100)</div>
+                  <input 
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={goalTopics} 
+                    onChange={(e)=>setGoalTopics(e.target.value)} 
+                    className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" 
+                  />
                 </div>
                 <div>
                   <div className="text-[#103358] font-semibold mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Desired Mark</div>
-                  <div className="text-[#4F4F4F] text-sm mb-2">from 50 to 100</div>
-                  <input value={goalMark} onChange={(e)=>setGoalMark(e.target.value)} className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
+                  <div className="text-[#4F4F4F] text-sm mb-2">from 0 to 100</div>
+                  <input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={goalMark} 
+                    onChange={(e)=>setGoalMark(e.target.value)} 
+                    className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" 
+                  />
                 </div>
               </div>
             </section>
@@ -332,30 +599,57 @@ Practice and excel with 5 Steps!`);
             {selected == null && <Divider />}
 
             {/* Custom Sign-in-page */}
-            {(!selected || selected === 'Custom Sign-in-page') && (
+            {!loading && (!selected || selected === 'Custom Sign-in-page') && (
             <section id={sectionLinkId('Custom Sign-in-page')} className="py-8">
-              <h3 className="text-[#103358] text-lg font-semibold mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Custom Sign-in-page
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[#103358] text-lg font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Custom Sign-in-page
+                </h3>
+                <button
+                  onClick={saveOrganizationData}
+                  disabled={saving}
+                  className="bg-[#398AC8] text-white px-4 py-2 rounded-md text-sm hover:bg-[#2c6a9a] disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
               <p className="text-[#4F4F4F] text-sm max-w-2xl mb-4">
                 Your students can sign in to TS through the dedicated sign-in page for your account. You can customize this page by uploading your photo or any other picture and editing the welcome message shown to students.
               </p>
               <Label>Page URL</Label>
               <div className="flex items-center gap-3 mb-6">
                 <a className="text-[#398AC8] whitespace-nowrap" href="#">www.takespace.co./signin/</a>
-                <input value={pageName} onChange={(e)=>setPageName(e.target.value)} placeholder="type your page name here" className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" />
+                <input 
+                  value={pageName} 
+                  onChange={(e)=>setPageName(e.target.value)} 
+                  placeholder="type your page name here" 
+                  maxLength={300}
+                  className="w-full max-w-[324px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" 
+                />
               </div>
               <div className="flex items-start gap-6">
                 <img src="/logo.svg" alt="brand" className="w-20 h-20 cursor-pointer" onClick={() => setIsUploadOpen(true)} />
                 <div className="flex-1 space-y-4">
                   <div>
                     <Label>Welcome Header</Label>
-                    <div className="text-[#398AC8]">Welcome to Ms Alya’s Class!</div>
+                    <input 
+                      value={organizationData.login_welcome_header || ''} 
+                      onChange={(e) => setOrganizationData(prev => ({ ...prev, login_welcome_header: e.target.value }))}
+                      placeholder="Welcome to Ms Alya's Class!"
+                      maxLength={300}
+                      className="w-full max-w-[400px] h-[43px] bg-[#F7F7F7] rounded-md px-3 text-[14px] text-black" 
+                    />
                   </div>
                   <div>
                     <Label>Welcome Message</Label>
                     <div className="text-[#4F4F4F] space-y-2">
                       <button className="text-[#398AC8] underline" onClick={() => setIsWelcomeOpen(true)}>Edit welcome message</button>
+                      <div className="text-sm text-gray-500 max-w-md">
+                        {organizationData.login_welcome_message ? 
+                          organizationData.login_welcome_message.substring(0, 100) + (organizationData.login_welcome_message.length > 100 ? '...' : '') : 
+                          'No welcome message set'
+                        }
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -365,7 +659,7 @@ Practice and excel with 5 Steps!`);
             {selected == null && <Divider />}
 
             {/* Account Contacts */}
-            {(!selected || selected === 'Account Contacts') && (
+            {!loading && (!selected || selected === 'Account Contacts') && (
             <section id={sectionLinkId('Account Contacts')} className="py-8">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[#103358] text-lg font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -373,9 +667,63 @@ Practice and excel with 5 Steps!`);
                 </h3>
               </div>
               <div className="overflow-hidden rounded-lg">
-                <TableHeader columns={["Name", "Email", "Phone", "Role"]} />
+                <TableHeader columns={["Name", "Email", "Phone", "Role", "Actions"]} />
                 {contacts.map((c, idx) => (
-                  <TableRow key={idx} values={[c.name, c.email, c.phone, c.role]} last={idx === contacts.length - 1} />
+                  <div key={c.id || idx}>
+                    {editingContact === c.id ? (
+                      <div className="grid grid-cols-5 px-4 items-center text-[#103358] bg-[#F9F9F9] py-4">
+                        <input
+                          value={contactFormData.full_name}
+                          onChange={(e) => setContactFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                          className="h-[43px] bg-white rounded-md px-3 text-[14px] text-black border"
+                        />
+                        <input
+                          value={contactFormData.email}
+                          onChange={(e) => setContactFormData(prev => ({ ...prev, email: e.target.value }))}
+                          className="h-[43px] bg-white rounded-md px-3 text-[14px] text-black border"
+                        />
+                        <input
+                          value={contactFormData.phone}
+                          onChange={(e) => setContactFormData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="h-[43px] bg-white rounded-md px-3 text-[14px] text-black border"
+                        />
+                        <select
+                          value={contactFormData.organization_role}
+                          onChange={(e) => setContactFormData(prev => ({ ...prev, organization_role: e.target.value }))}
+                          className="h-[43px] bg-white rounded-md px-3 text-[14px] text-black border"
+                        >
+                          <option value="account_owner">Account Owner</option>
+                          <option value="teacher">Teacher</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={saveContactEdit}
+                            className="bg-green-500 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelContactEdit}
+                            className="bg-gray-500 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="grid grid-cols-5 px-4 items-center text-[#103358] bg-[#F9F9F9] py-4 cursor-pointer hover:bg-gray-100"
+                        onClick={() => startEditingContact(c)}
+                      >
+                        <div className="text-sm truncate">{c.full_name}</div>
+                        <div className="text-sm truncate">{c.email}</div>
+                        <div className="text-sm truncate">{c.phone}</div>
+                        <div className="text-sm truncate">{c.organization_role}</div>
+                        <div className="text-sm text-[#398AC8]">Edit</div>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </section>
@@ -410,7 +758,7 @@ Practice and excel with 5 Steps!`);
             {selected == null && <Divider />}
 
             {/* Username & Password */}
-            {(!selected || selected === 'Username & Password') && (
+            {!loading && (!selected || selected === 'Username & Password') && (
             <section id={sectionLinkId('Username & Password')} className="py-8">
               <h3 className="text-[#103358] text-lg font-semibold mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Username & Password
@@ -420,11 +768,12 @@ Practice and excel with 5 Steps!`);
                   <Label>Username</Label>
                   <div className="flex items-center gap-2">
                     <div className="relative w-full max-w-[240px]">
-                      <select value={username} onChange={(e)=>setUsername(e.target.value)} className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black">
-                        <option value="admin">admin</option>
-                        <option value="teacher">teacher</option>
-                      </select>
-                     
+                      <input 
+                        value={username} 
+                        onChange={(e)=>setUsername(e.target.value)} 
+                        className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black"
+                        placeholder="Enter username"
+                      />
                     </div>
                     <span className="text-[#BDBDBD]">@5steps</span>
                   </div>
@@ -434,12 +783,20 @@ Practice and excel with 5 Steps!`);
                   <Label>Password</Label>
                   <div className="flex items-center gap-3">
                     <div className="relative w-full max-w-[240px]">
-                       <select className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black">
-                        <option>{passwordMask}</option>
-                      </select>
-                      
+                       <input 
+                        type="password" 
+                        value={passwordMask} 
+                        disabled 
+                        className="w-full h-[43px] bg-[#F7F7F7] rounded-md pl-3 pr-9 text-[14px] text-black"
+                      />
                     </div>
-                    <button type="button" className="text-[#398AC8]" onClick={() => setIsPasswordOpen(true)}>Change</button>
+                    <button 
+                      type="button" 
+                      className="text-[#398AC8] hover:underline" 
+                      onClick={() => setIsPasswordOpen(true)}
+                    >
+                      Change
+                    </button>
                   </div>
                 </div>
               </div>
@@ -534,10 +891,32 @@ Practice and excel with 5 Steps!`);
               <div className="text-[32px] font-semibold mb-4">Welcome Message</div>
             </div>
             <div className="px-8">
-              <textarea value={welcomeMessage} onChange={(e)=>setWelcomeMessage(e.target.value)} className="w-full h-64 border border-gray-200 rounded-2xl p-6 text-[#292D32] bg-white" />
+              <textarea 
+                value={welcomeMessage} 
+                onChange={(e)=>setWelcomeMessage(e.target.value)} 
+                maxLength={500}
+                className="w-full h-64 border border-gray-200 rounded-2xl p-6 text-[#292D32] bg-white" 
+                placeholder="Enter your welcome message for students..."
+              />
+              <div className="text-sm text-gray-500 mt-2">
+                {welcomeMessage.length}/500 characters
+              </div>
               <div className="flex justify-end gap-3 mt-6 pb-8">
-                <button className="border border-[#16375A] text-[#16375A] bg-[rgba(12,104,199,0.06)] rounded-md px-4 py-2" onClick={()=>setIsWelcomeOpen(false)}>Cancel</button>
-                <button className="bg-[#16375A] text-white rounded-md px-4 py-2" onClick={()=>setIsWelcomeOpen(false)}>Submit</button>
+                <button 
+                  className="border border-[#16375A] text-[#16375A] bg-[rgba(12,104,199,0.06)] rounded-md px-4 py-2" 
+                  onClick={()=>setIsWelcomeOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="bg-[#16375A] text-white rounded-md px-4 py-2" 
+                  onClick={() => {
+                    setOrganizationData(prev => ({ ...prev, login_welcome_message: welcomeMessage }));
+                    setIsWelcomeOpen(false);
+                  }}
+                >
+                  Save
+                </button>
               </div>
             </div>
           </Modal>
@@ -551,23 +930,52 @@ Practice and excel with 5 Steps!`);
                 {/* Current Password */}
                 <div className="mb-4 relative" style={{ height: '79px' }}>
                   <div className="absolute left-0 top-0 text-[14px] leading-5 text-[#374151]">Current Password</div>
-                  <input type="password" value={currentPassword} onChange={(e)=>setCurrentPassword(e.target.value)} className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" />
+                  <input 
+                    type="password" 
+                    value={currentPassword} 
+                    onChange={(e)=>setCurrentPassword(e.target.value)} 
+                    className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" 
+                    placeholder="Enter current password"
+                  />
                 </div>
                 {/* New Password */}
                 <div className="mb-4 relative" style={{ height: '79px' }}>
                   <div className="absolute left-0 top-0 text-[14px] leading-5 text-[#374151]">New Password</div>
-                  <input type="password" value={newPassword} onChange={(e)=>setNewPassword(e.target.value)} className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" />
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={(e)=>setNewPassword(e.target.value)} 
+                    className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" 
+                    placeholder="Enter new password"
+                  />
                 </div>
                 {/* Repeat New Password */}
                 <div className="relative" style={{ height: '79px' }}>
                   <div className="absolute left-0 top-0 text-[14px] leading-5 text-[#374151]">Repeat New Password</div>
-                  <input type="password" value={repeatPassword} onChange={(e)=>setRepeatPassword(e.target.value)} className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" />
+                  <input 
+                    type="password" 
+                    value={repeatPassword} 
+                    onChange={(e)=>setRepeatPassword(e.target.value)} 
+                    className="absolute left-1/2 -translate-x-1/2 top-[31px] w-[380px] h-[48px] border border-[#103358] rounded-[8px] px-4 text-black" 
+                    placeholder="Confirm new password"
+                  />
                 </div>
               </div>
               {/* Buttons */}
               <div className="absolute left-[244.5px] top-[383px] flex gap-2">
-                <button className="border border-[#16375A] text-[#16375A] bg-[rgba(12,104,199,0.06)] rounded-[8px] px-4 py-2 w-[92px] h-[40px]" onClick={()=>setIsPasswordOpen(false)}>Cancel</button>
-                <button className="bg-[#16375A] text-white rounded-[8px] px-4 py-2 w-[73px] h-[40px]">Save</button>
+                <button 
+                  className="border border-[#16375A] text-[#16375A] bg-[rgba(12,104,199,0.06)] rounded-[8px] px-4 py-2 w-[92px] h-[40px]" 
+                  onClick={()=>setIsPasswordOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="bg-[#16375A] text-white rounded-[8px] px-4 py-2 w-[73px] h-[40px] disabled:opacity-50" 
+                  onClick={handlePasswordUpdate}
+                  disabled={saving || !currentPassword || !newPassword || !repeatPassword}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
               </div>
               {/* Divider */}
               <div className="absolute left-[39px] top-[70px] w-[378px] border-t border-[#D9E7EF]" />

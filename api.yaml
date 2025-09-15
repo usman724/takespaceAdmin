@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: TakeSpace REST API
-  version: 0.1 (7979b8b@dev)
+  version: 0.1 (274499e@dev)
   description: Intelligent Training System
 paths:
   /api/v1/admin/leaderboards/:
@@ -966,20 +966,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
         required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenObtainPair'
+                $ref: '#/components/schemas/CustomTokenObtainPair'
           description: ''
   /api/v1/auth/refresh/:
     post:
@@ -3163,7 +3163,6 @@ paths:
                   last_name: Doe
                   email: jane.doe@example.com
                   username: JaneDoe
-                  parent_pin: '1234'
                 summary: Example
           application/x-www-form-urlencoded:
             schema:
@@ -3174,8 +3173,20 @@ paths:
       security:
       - jwtAuth: []
       responses:
-        '204':
-          description: No response body
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUser'
+              examples:
+                Example:
+                  value:
+                    first_name: Jane
+                    last_name: Doe
+                    email: jane.doe@example.com
+                    username: JaneDoe
+                  summary: Example
+          description: ''
   /api/v1/users/me/update-notifications/:
     patch:
       operationId: users_me_update_notifications_partial_update
@@ -3200,6 +3211,83 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/users/me/update-password/:
+    post:
+      operationId: users_me_update_password_create
+      description: Updates the current user's password. Requires current password
+        for verification.
+      summary: Update My Password
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdatePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdatePassword'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/users/me/upload-profile-pic/:
+    post:
+      operationId: users_me_upload_profile_pic_create
+      description: Uploads a new profile picture for the current user. Replaces any
+        existing profile picture.
+      summary: Upload Profile Picture
+      tags:
+      - Users
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadProfilePic'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicUser'
+          description: ''
+  /api/v1/users/me/verify-parent-pin/:
+    post:
+      operationId: users_me_verify_parent_pin_create
+      description: Verifies that the entered parent PIN is valid for the logged in
+        student.
+      summary: Verify Parent PIN
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParentPinVerification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ParentPinVerification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ParentPinVerification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Parent PIN is valid
+          description: ''
   /api/v1/users/signup/:
     post:
       operationId: users_signup_create
@@ -3328,7 +3416,11 @@ components:
           type: integer
           maximum: 10
           minimum: 1
+        image_url:
+          type: string
+          readOnly: true
       required:
+      - image_url
       - name
       - target_amount
       - type
@@ -3653,16 +3745,64 @@ components:
         percentage_of_mastery_plus:
           type: string
           readOnly: true
+        profile_pic_url:
+          type: string
+          nullable: true
+          description: Get the user's profile picture URL
+          readOnly: true
+        joined_date:
+          type: string
+          nullable: true
+          description: Get the date when the user joined (created_at)
+          readOnly: true
+        friends_count:
+          type: integer
+          nullable: true
+          description: Get the number of friends the student has
+          readOnly: true
+        total_experience:
+          type: integer
+          nullable: true
+          description: Get the student's total XP points
+          readOnly: true
+        day_streak:
+          type: integer
+          nullable: true
+          description: Get the student's current day streak
+          readOnly: true
+        student_league:
+          type: string
+          nullable: true
+          description: Get the student's current league
+          readOnly: true
+        total_topics:
+          type: integer
+          nullable: true
+          description: Get the total number of topics the student has
+          readOnly: true
+        grade:
+          type: string
+          nullable: true
+          description: Get the student's current grade
+          readOnly: true
       required:
+      - day_streak
       - email
       - first_name
+      - friends_count
+      - grade
       - id
+      - joined_date
       - last_name
       - percentage_of_mastery
       - percentage_of_mastery_plus
+      - profile_pic_url
       - student_id
+      - student_league
       - subjects
       - topics_mastered_yesterday
+      - total_experience
+      - total_topics
       - username
     CreateStudent:
       type: object
@@ -3743,6 +3883,20 @@ components:
       - last_name
       - subject_ids
       - subjects
+      - username
+    CustomTokenObtainPair:
+      type: object
+      description: Custom serializer that allows login with either username or email
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          title: Username or Email
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
       - username
     DeactivateStudents:
       type: object
@@ -4524,6 +4678,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SupportArticle'
+    ParentPinVerification:
+      type: object
+      properties:
+        parent_pin:
+          type: string
+          description: The 4-digit parent PIN to verify
+          maxLength: 4
+      required:
+      - parent_pin
     ParentSignup:
       type: object
       properties:
@@ -4694,6 +4857,12 @@ components:
         username:
           type: string
           readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+          readOnly: true
         grade:
           type: integer
           readOnly: true
@@ -4772,9 +4941,6 @@ components:
         username:
           type: string
           maxLength: 50
-        parent_pin:
-          type: string
-          maxLength: 4
     PatchedUserNotificationSettingsUpdate:
       type: object
       properties:
@@ -5057,9 +5223,18 @@ components:
         name:
           type: string
           maxLength: 300
+        subtitle:
+          type: string
+          maxLength: 300
         unit_id:
           type: integer
           nullable: true
+          readOnly: true
+        unit_name:
+          type: string
+          readOnly: true
+        subject_name:
+          type: string
           readOnly: true
         grade_info:
           type: string
@@ -5070,20 +5245,18 @@ components:
         last_quiz_score:
           type: string
           readOnly: true
-        activity_data:
-          type: string
-          readOnly: true
-        student_topic_data:
+        activity_text:
           type: string
           readOnly: true
       required:
-      - activity_data
+      - activity_text
       - grade_info
       - id
       - last_quiz_score
       - name
-      - student_topic_data
+      - subject_name
       - unit_id
+      - unit_name
       - video_url
     StudentAchievement:
       type: object
@@ -5339,9 +5512,14 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+        is_friends:
+          type: boolean
+          readOnly: true
+          description: Whether this student is a friend of the current user.
       required:
       - avatar
       - id
+      - is_friends
       - name
     StudentLeaderboard:
       type: object
@@ -5403,6 +5581,12 @@ components:
         username:
           type: string
           readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+          readOnly: true
         grade:
           type: integer
           readOnly: true
@@ -5436,6 +5620,7 @@ components:
       - first_name
       - grade
       - id
+      - is_active
       - last_name
       - modified_at
       - subjects
@@ -5730,6 +5915,10 @@ components:
           type: boolean
           readOnly: true
           description: Whether this student follows the current user.
+        is_friend:
+          type: boolean
+          readOnly: true
+          description: Whether this student is a friend of the current user.
         day_streak:
           type: integer
           readOnly: true
@@ -5761,6 +5950,7 @@ components:
       - full_name
       - id
       - is_following
+      - is_friend
       - league
       - organization_name
       - percentage_of_mastery
@@ -5973,9 +6163,13 @@ components:
           nullable: true
           description: ' '
           readOnly: true
+        total_hours:
+          type: string
+          readOnly: true
       required:
       - percentage_of_mastery
       - subject_name
+      - total_hours
     StudentTimePracticed:
       type: object
       properties:
@@ -6667,26 +6861,6 @@ components:
           writeOnly: true
       required:
       - is_active
-    TokenObtainPair:
-      type: object
-      properties:
-        username:
-          type: string
-          writeOnly: true
-        password:
-          type: string
-          writeOnly: true
-        access:
-          type: string
-          readOnly: true
-        refresh:
-          type: string
-          readOnly: true
-      required:
-      - access
-      - password
-      - refresh
-      - username
     TokenRefresh:
       type: object
       properties:
@@ -6796,6 +6970,30 @@ components:
       - password
       - student_class
       - username
+    UpdateUser:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 200
+        last_name:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        username:
+          type: string
+          maxLength: 50
+    UploadProfilePic:
+      type: object
+      properties:
+        avatar:
+          type: string
+          format: uri
+      required:
+      - avatar
     UserNotificationToggle:
       type: object
       properties:
