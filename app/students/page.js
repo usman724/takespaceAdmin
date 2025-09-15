@@ -686,35 +686,47 @@ const StudentsPage = () => {
           api.getSubjects()
         ]);
 
-        // Transform students data to match expected format
-        const students = studentsResponse.data?.results?.map(student => ({
-          id: student.id,
-          class: student.student_class || 'A',
-          firstName: student.first_name,
-          lastName: student.last_name,
-          userName: student.username,
-          email: student.email,
-          grade: student.grade?.toString(),
-          subjects: student.subjects || [],
-          teachers: student.teachers || '',
-          password: 'Password', // Not returned by API for security
-          status: student.is_active === "True" || student.is_active === true ? 'active' : 'inactive',
-          is_active: student.is_active, // Keep original is_active field
-          aptitudeLevel: student.aptitude_level?.toString(),
-          accountCreated: student.created_at ? new Date(student.created_at).toLocaleDateString('en-GB') : '',
-          lastUpdated: student.modified_at ? new Date(student.modified_at).toLocaleDateString('en-GB') : ''
-        })) || [];
+        // Build subject ID -> name lookup
+        const subjectsArray = subjectsResponse.data || [];
+        const subjectsById = subjectsArray.reduce((acc, subj) => {
+          acc[String(subj.id)] = subj.name;
+          return acc;
+        }, {});
+
+        // Transform students data to match expected format (map subject IDs to names for display)
+        const students = studentsResponse.data?.results?.map(student => {
+          const subjectIds = Array.isArray(student.subjects) ? student.subjects.map(String) : [];
+          const subjectNames = subjectIds.map(id => subjectsById[id] || id);
+          return {
+            id: student.id,
+            class: student.student_class || 'A',
+            firstName: student.first_name,
+            lastName: student.last_name,
+            userName: student.username,
+            email: student.email,
+            grade: student.grade?.toString(),
+            subjects: subjectNames,
+            subjectIds,
+            teachers: student.teachers || '',
+            password: 'Password', // Not returned by API for security
+            status: student.is_active === "True" || student.is_active === true ? 'active' : 'inactive',
+            is_active: student.is_active, // Keep original is_active field
+            aptitudeLevel: student.aptitude_level?.toString(),
+            accountCreated: student.created_at ? new Date(student.created_at).toLocaleDateString('en-GB') : '',
+            lastUpdated: student.modified_at ? new Date(student.modified_at).toLocaleDateString('en-GB') : ''
+          };
+        }) || [];
 
         // Transform teachers data
         const teachers = teachersResponse.map(teacher => teacher.first_name + ' ' + teacher.last_name) || [];
 
-        // Transform subjects data
-        const subjects = subjectsResponse.data?.map(subject => subject.name) || [];
+        // Transform subjects data (names list)
+        const subjects = subjectsArray.map(subject => subject.name) || [];
 
         const pageData = {
           students,
           teachers,
-          subjects
+          subjects,
         };
         
         setPageData(pageData);

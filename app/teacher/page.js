@@ -244,18 +244,29 @@ const TeachersTable = ({ data, onDelete, onTeacherClick, onRestore }) => {
     <div className="overflow-x-auto">
       <table {...getTableProps()} className="w-full border-collapse">
         <thead>
-          {headerGroups.map(headerGroup => (
-            <tr {...headerGroup.getHeaderGroupProps()} className="bg-[#16375A] text-white rounded-t-lg">
-              {headerGroup.headers.map(column => (
-                <th 
-                  {...column.getHeaderProps(column.getSortByToggleProps())}
-                  className="px-6 py-4 text-left font-medium text-[16px] leading-[24px]"
-                >
-                  {column.render('Header')}
-                </th>
-              ))}
-            </tr>
-          ))}
+          {headerGroups.map(headerGroup => {
+            const groupProps = headerGroup.getHeaderGroupProps();
+            const groupKey = groupProps.key || headerGroup.id;
+            const { key, ...restGroupProps } = groupProps;
+            return (
+              <tr key={groupKey} {...restGroupProps} className="bg-[#16375A] text-white rounded-t-lg">
+                {headerGroup.headers.map(column => {
+                  const headerProps = column.getHeaderProps(column.getSortByToggleProps());
+                  const headerKey = headerProps.key || column.id || column.accessor || String(column.Header);
+                  const { key, ...restHeaderProps } = headerProps;
+                  return (
+                    <th
+                      key={headerKey}
+                      {...restHeaderProps}
+                      className="px-6 py-4 text-left font-medium text-[16px] leading-[24px]"
+                    >
+                      {column.render('Header')}
+                    </th>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </thead>
         <tbody {...getTableBodyProps()}>
           {page.map(row => {

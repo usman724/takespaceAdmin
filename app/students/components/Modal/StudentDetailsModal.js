@@ -8,7 +8,9 @@ const StudentDetailsModal = ({ isOpen, onClose, student, teachers = [], subjects
     const [showTeacherEdit, setShowTeacherEdit] = useState(false);
     const [showSubjectEdit, setShowSubjectEdit] = useState(false);
     const [selectedTeachers, setSelectedTeachers] = useState([]);
+    const [initialTeacherIds, setInitialTeacherIds] = useState([]);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
+    const [initialSubjectIds, setInitialSubjectIds] = useState([]);
     const [availableTeachers, setAvailableTeachers] = useState([]);
     const [availableSubjects, setAvailableSubjects] = useState([]);
     const [teacherSearchTerm, setTeacherSearchTerm] = useState('');
@@ -64,7 +66,35 @@ const StudentDetailsModal = ({ isOpen, onClose, student, teachers = [], subjects
                     })) || [];
 
                     setAvailableTeachers(availableTeachers);
+
+                    // Derive initial teacher IDs and normalize selected teachers with actual IDs from availableTeachers
+                    const initialIds = Array.isArray(student.teachers)
+                        ? student.teachers.map((teacherName) => {
+                            const found = availableTeachers.find(t => t.name === teacherName);
+                            return found ? found.id : null;
+                          }).filter(id => id !== null)
+                        : [];
+                    setInitialTeacherIds(initialIds);
+
+                    const normalizedSelectedTeachers = Array.isArray(student.teachers)
+                        ? student.teachers.map((teacherName) => {
+                            const found = availableTeachers.find(t => t.name === teacherName);
+                            return found ? { id: found.id, name: found.name } : null;
+                          }).filter(Boolean)
+                        : [];
+                    setSelectedTeachers(normalizedSelectedTeachers);
                     setAvailableSubjects(availableSubjects);
+
+                    // Derive initial subject IDs and normalize selected subjects with actual IDs from availableSubjects
+                    const initialSubIds = Array.isArray(student.subjects)
+                        ? student.subjects.map((subjectName) => {
+                            const found = availableSubjects.find(s => s.name === subjectName);
+                            return found ? found.id : null;
+                          }).filter(id => id !== null)
+                        : [];
+                    setInitialSubjectIds(initialSubIds);
+
+                    // Keep original selectedSubjects derived earlier from student data (names and indices)
                 } catch (error) {
                     console.error('Error fetching available teachers and subjects:', error);
                     // Fallback to props if API fails
@@ -138,15 +168,31 @@ const StudentDetailsModal = ({ isOpen, onClose, student, teachers = [], subjects
                 return availableTeacher ? availableTeacher.id : null;
             }).filter(id => id !== null);
             
-            const result = await api.addTeachersToStudent(student.id, teacherIds);
-            
-            if (result.ok) {
+            // Compute additions and removals relative to initial assignment
+            const toAdd = teacherIds.filter(id => !initialTeacherIds.includes(id));
+            const toRemove = initialTeacherIds.filter(id => !teacherIds.includes(id));
+
+            // Perform API calls
+            let addOk = true;
+            if (toAdd.length > 0) {
+                const addResult = await api.addTeachersToStudent(student.id, toAdd);
+                addOk = addResult.ok;
+            }
+
+            let removeOk = true;
+            if (toRemove.length > 0) {
+                const removeResults = await Promise.all(toRemove.map(id => api.removeTeacherFromStudent(student.id, id)));
+                removeOk = removeResults.every(r => r.ok);
+            }
+
+            if (addOk && removeOk) {
                 setShowTeacherEdit(false);
                 setTeacherSearchTerm('');
+                setInitialTeacherIds(teacherIds);
                 // Update the student object in parent component if needed
                 // This would require a callback to parent component
             } else {
-                console.error('Failed to save teachers:', result.error);
+                console.error('Failed to save teachers');
                 // You might want to show a toast notification here
             }
         } catch (error) {
@@ -163,15 +209,31 @@ const StudentDetailsModal = ({ isOpen, onClose, student, teachers = [], subjects
                 return availableSubject ? availableSubject.id : null;
             }).filter(id => id !== null);
             
-            const result = await api.addSubjectsToStudent(student.id, subjectIds);
-            
-            if (result.ok) {
+            // Compute additions and removals relative to initial assignment
+            const toAdd = subjectIds.filter(id => !initialSubjectIds.includes(id));
+            const toRemove = initialSubjectIds.filter(id => !subjectIds.includes(id));
+
+            // Perform API calls
+            let addOk = true;
+            if (toAdd.length > 0) {
+                const addResult = await api.addSubjectsToStudent(student.id, toAdd);
+                addOk = addResult.ok;
+            }
+
+            let removeOk = true;
+            if (toRemove.length > 0) {
+                const removeResults = await Promise.all(toRemove.map(id => api.removeSubjectFromStudent(student.id, id)));
+                removeOk = removeResults.every(r => r.ok);
+            }
+
+            if (addOk && removeOk) {
                 setShowSubjectEdit(false);
                 setSubjectSearchTerm('');
+                setInitialSubjectIds(subjectIds);
                 // Update the student object in parent component if needed
                 // This would require a callback to parent component
             } else {
-                console.error('Failed to save subjects:', result.error);
+                console.error('Failed to save subjects');
                 // You might want to show a toast notification here
             }
         } catch (error) {

@@ -9,7 +9,8 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
     const { t } = useTranslation();
     const [showStudentList, setShowStudentList] = useState(false);
     const [showSubjectEdit, setShowSubjectEdit] = useState(false);
-    const [selectedSubjects, setSelectedSubjects] = useState(teacher?.subjects || ['Maths']);
+    // Store selected subjects as subject IDs (strings) for robust comparison
+    const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [students, setStudents] = useState([]);
     const [loadingStudents, setLoadingStudents] = useState(false);
     const [studentsError, setStudentsError] = useState(null);
@@ -21,11 +22,11 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [detailsError, setDetailsError] = useState(null);
 
-    const handleSubjectChange = (subject) => {
+    const handleSubjectChange = (subjectId) => {
         setSelectedSubjects(prev => {
-            const newSubjects = prev.includes(subject)
-                ? prev.filter(s => s !== subject)
-                : [...prev, subject];
+            const newSubjects = prev.includes(subjectId)
+                ? prev.filter(s => s !== subjectId)
+                : [...prev, subjectId];
             return newSubjects;
         });
     };
@@ -35,27 +36,46 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
         
         setUpdatingSubjects(true);
         try {
-            // Map subject names to IDs
-            const subjectIds = selectedSubjects
-                .map(subjectName => {
-                    const subject = allSubjects.find(s => s.name === subjectName);
-                    return subject ? subject.id : null;
-                })
-                .filter(Boolean);
+            // Determine current assigned IDs from details or teacher fallback
+            const currentAssignedIds = Array.isArray(teacherDetails?.subjects) && teacherDetails.subjects.length
+                ? teacherDetails.subjects.map(s => String(s.id ?? s.subject_id ?? s.pk)).filter(Boolean)
+                : Array.isArray(teacher?.subjects)
+                    ? teacher.subjects.map(s => String(typeof s === 'string' ? (allSubjects.find(a => a.name === s)?.id ?? '') : (s?.id ?? s?.subject_id ?? s?.pk ?? ''))).filter(Boolean)
+                    : [];
 
-            // Update teacher subjects using the API
-            const response = await api.assignSubjectsToTeacher(teacher.id, subjectIds);
-            
-            if (response.ok) {
-                // Update local state
-                onEditSubjects(selectedSubjects);
-                setShowSubjectEdit(false);
-                toast.success('Subjects updated successfully');
-            } else {
-                const errorMessage = response.body?.error?.message || 'Failed to update subjects';
-                console.error('Failed to update subjects:', errorMessage);
-                toast.error(errorMessage);
+            const nextIds = selectedSubjects; // already string ids
+
+            const toAdd = nextIds.filter(id => !currentAssignedIds.includes(id)).map(id => Number(id));
+            const toRemove = currentAssignedIds.filter(id => !nextIds.includes(id)).map(id => Number(id));
+
+            // 1) Add new subjects if any
+            if (toAdd.length) {
+                const addRes = await api.assignSubjectsToTeacher(teacher.id, toAdd);
+                if (!(addRes && (addRes.status === 201 || addRes.status === 200 || addRes.status === 204))) {
+                    const msg = addRes.body?.error?.message || 'Failed to add subjects';
+                    toast.error(msg);
+                    setUpdatingSubjects(false);
+                    return;
+                }
             }
+
+            // 2) Remove unselected subjects one by one via DELETE endpoint
+            for (const sid of toRemove) {
+                const delRes = await api.removeSubjectFromTeacherAdmin(teacher.id, sid);
+                if (!(delRes && delRes.ok)) {
+                    const msg = delRes.body?.error?.message || delRes.body?.detail || 'Failed to remove subject';
+                    toast.error(msg);
+                    setUpdatingSubjects(false);
+                    return;
+                }
+            }
+
+            // Success
+            const idToName = Object.fromEntries(allSubjects.map(s => [String(s.id), s.name]));
+            const selectedNames = selectedSubjects.map(id => idToName[String(id)]).filter(Boolean);
+            onEditSubjects(selectedNames);
+            setShowSubjectEdit(false);
+            toast.success('Subjects updated successfully');
         } catch (error) {
             console.error('Error updating subjects:', error);
             toast.error('Failed to update subjects. Please try again.');
@@ -121,12 +141,17 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                 setSubjectsError(null);
                 try {
                     const response = await api.getAllSubjects();
-                    if (response.error) {
-                        setSubjectsError(response.error.message);
-                        setAllSubjects([]);
-                    } else {
-                        setAllSubjects(response.data || []);
-                    }
+                    const list = Array.isArray(response)
+                        ? response
+                        : Array.isArray(response?.data?.results)
+                            ? response.data.results
+                            : Array.isArray(response?.data)
+                                ? response.data
+                                : [];
+                    const normalized = list
+                        .map(s => ({ id: String(s.id ?? s.subject_id ?? s.pk ?? ''), name: s.name || s.title || '-' }))
+                        .filter(s => s.id);
+                    setAllSubjects(normalized);
                 } catch (error) {
                     console.error('Error fetching subjects:', error);
                     setSubjectsError('Failed to load subjects');
@@ -139,6 +164,29 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
 
         fetchAllSubjects();
     }, [isOpen]);
+
+    // When teacher details or allSubjects are loaded while modal is open, pre-select already assigned subjects
+    useEffect(() => {
+        if (!isOpen) return;
+        // Prefer detailed subjects from teacherDetails
+        const detailSubjects = teacherDetails?.subjects;
+        if (Array.isArray(detailSubjects) && detailSubjects.length) {
+            const ids = detailSubjects.map(s => String(s.id ?? s.subject_id ?? s.pk)).filter(Boolean);
+            if (ids.length) {
+                setSelectedSubjects(ids);
+                return;
+            }
+        }
+        // Fallback to subjects on teacher prop (names array or objects)
+        if (Array.isArray(teacher?.subjects) && teacher.subjects.length) {
+            const nameToId = new Map(allSubjects.map(s => [s.name, String(s.id)]));
+            const ids = teacher.subjects
+                .map(s => (typeof s === 'string' ? s : (s?.name || ''))) // names
+                .map(name => nameToId.get(name))
+                .filter(Boolean);
+            if (ids.length) setSelectedSubjects(ids);
+        }
+    }, [isOpen, teacherDetails, teacher, allSubjects]);
 
     if (!isOpen) return null;
 
@@ -348,11 +396,11 @@ const TeacherDetailsModal = ({ isOpen, onClose, teacher, onResetPassword, onEdit
                                                 <input
                                                     type="checkbox"
                                                     id={`subject-${subject.id}`}
-                                                    checked={selectedSubjects.includes(subject.name)}
-                                                    onChange={() => handleSubjectChange(subject.name)}
+                                                    checked={selectedSubjects.includes(String(subject.id))}
+                                                    onChange={() => handleSubjectChange(String(subject.id))}
                                                     className="w-[22px] h-[22px] bg-white border border-[#103358] rounded-[3px] checked:bg-[#103358] checked:border-[#103358] appearance-none relative cursor-pointer"
                                                 />
-                                                {selectedSubjects.includes(subject.name) && (
+                                                {selectedSubjects.includes(String(subject.id)) && (
                                                     <svg
                                                         className="absolute top-0 left-0 w-[22px] h-[22px] pointer-events-none"
                                                         viewBox="0 0 22 22"

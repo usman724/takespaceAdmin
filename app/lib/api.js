@@ -898,6 +898,24 @@ export const api = {
       return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
     }
   },
+  async removeSubjectFromTeacherAdmin(teacherId, subjectId) {
+    try {
+      const url = `${API_BASE_URL.replace('/api/v1', '')}/custom-admin/v1/teachers/${teacherId}/subjects/${subjectId}/remove/`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${FIXED_TOKEN}`,
+          'accept': 'application/json',
+        },
+      });
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json') ? await response.json() : null;
+      return { ok: response.ok, status: response.status, body: payload };
+    } catch (error) {
+      console.error('Error removing subject from teacher:', error);
+      return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
+    }
+  },
 
   // Support Articles API
   async getSupportArticles(page = 1) {
