@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "../../components/layout/Layout";
 import I18nProvider from "../../components/providers/I18nProvider";
@@ -17,38 +17,91 @@ export default function CreateLeaderboardPage() {
 
   const [gradesOpen, setGradesOpen] = useState(false);
   const [selectedGrades, setSelectedGrades] = useState([]);
+  const [gradeOptions, setGradeOptions] = useState([]);
+  const [gradesLoading, setGradesLoading] = useState(false);
 
   const [subjectsOpen, setSubjectsOpen] = useState(false);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [subjectOptions, setSubjectOptions] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
 
   // Form state
   const [leaderboardName, setLeaderboardName] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [startTimeOpt, setStartTimeOpt] = useState("Now");
+  const [startTimeStr, setStartTimeStr] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [endTime, setEndTime] = useState("19:00");
+  const [endTimeStr, setEndTimeStr] = useState("");
   
   // API state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  // Grade and subject options (you might want to fetch these from API)
-  const gradeOptions = [
-    { id: 1, name: "Primary 1" },
-    { id: 2, name: "Primary 2" },
-    { id: 3, name: "Primary 3" },
-    { id: 4, name: "Primary 4" },
-    { id: 5, name: "Primary 5" },
-    { id: 6, name: "Primary 6" },
-  ];
+  // Load subjects from API
+  useEffect(() => {
+    const loadSubjects = async () => {
+      try {
+        setSubjectsLoading(true);
+        const resp = await api.getAllSubjects();
+        const list = Array.isArray(resp)
+          ? resp
+          : (Array.isArray(resp?.data?.results) ? resp.data.results
+              : Array.isArray(resp?.data) ? resp.data
+              : Array.isArray(resp?.results) ? resp.results
+              : []);
+        const mapped = list.map((s) => ({ id: s.id, name: s.name || s.title || s.subject_name || `Subject ${s.id}` })).filter((s) => s.id);
+        setSubjectOptions(mapped);
+      } catch (e) {
+        console.error('Error loading subjects:', e);
+        setSubjectOptions([]);
+      } finally {
+        setSubjectsLoading(false);
+      }
+    };
+    loadSubjects();
+  }, []);
 
-  const subjectOptions = [
-    { id: 1, name: "Maths" },
-    { id: 2, name: "Science" },
-    { id: 3, name: "English" },
-    { id: 4, name: "Geography" },
-  ];
+  // Load grades from Units API based on first selected subject
+  useEffect(() => {
+    const loadGrades = async () => {
+      if (!selectedSubjects.length) { setGradeOptions([]); return; }
+      const subjectId = selectedSubjects[0];
+      try {
+        setGradesLoading(true);
+        const resp = await api.getUnits(subjectId);
+        const data = resp?.data || resp;
+        let grades = [];
+        if (data?.grades && Array.isArray(data.grades)) {
+          grades = data.grades;
+        } else if (data?.results && Array.isArray(data.results)) {
+          // Try to infer grade field from results if present
+          const setG = new Set();
+          data.results.forEach((u) => {
+            if (u?.grade !== undefined && u?.grade !== null) setG.add(Number(u.grade));
+            if (u?.grade_level !== undefined && u?.grade_level !== null) setG.add(Number(u.grade_level));
+          });
+          grades = Array.from(setG).sort((a,b)=>a-b).map((g) => ({ id: g, name: `Grade ${g}` }));
+        } else if (Array.isArray(data)) {
+          const setG = new Set();
+          data.forEach((u) => {
+            if (u?.grade !== undefined && u?.grade !== null) setG.add(Number(u.grade));
+            if (u?.grade_level !== undefined && u?.grade_level !== null) setG.add(Number(u.grade_level));
+          });
+          grades = Array.from(setG).sort((a,b)=>a-b).map((g) => ({ id: g, name: `Grade ${g}` }));
+        }
+        const mapped = grades.map((g) => (
+          typeof g === 'object' ? { id: g.id ?? g.level ?? g.grade ?? g, name: g.name ?? `Grade ${g.level ?? g.id ?? g}` } : { id: g, name: `Grade ${g}` }
+        )).filter((g)=>g.id!==undefined && g.id!==null);
+        setGradeOptions(mapped);
+      } catch (e) {
+        console.error('Error loading grades from units:', e);
+        setGradeOptions([]);
+      } finally {
+        setGradesLoading(false);
+      }
+    };
+    loadGrades();
+  }, [selectedSubjects]);
 
   const toggleGrade = (gradeId) => {
     setSelectedGrades((prev) =>
@@ -94,6 +147,10 @@ export default function CreateLeaderboardPage() {
       setError('Please select start and end dates');
       return;
     }
+    if (!startTimeStr || !endTimeStr) {
+      setError('Please select start and end times');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -101,21 +158,17 @@ export default function CreateLeaderboardPage() {
       setSuccess(false);
 
       // Calculate start and end times
-      let startTime, endTime;
+      let startTimeIso, endTimeIso;
       
-      if (startTimeOpt === "Now") {
-        startTime = new Date().toISOString();
-      } else {
-        const [hours, minutes] = startTimeOpt.split(':').map(Number);
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(hours, minutes, 0, 0);
-        startTime = startDateTime.toISOString();
-      }
-      
-      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      const startDateTime = new Date(startDate);
+      const [sh, sm] = String(startTimeStr).split(':').map(Number);
+      startDateTime.setHours(Number(sh), Number(sm), 0, 0);
+      startTimeIso = startDateTime.toISOString();
+
       const endDateTime = new Date(endDate);
-      endDateTime.setHours(endHours, endMinutes, 0, 0);
-      endTime = endDateTime.toISOString();
+      const [eh, em] = String(endTimeStr).split(':').map(Number);
+      endDateTime.setHours(Number(eh), Number(em), 0, 0);
+      endTimeIso = endDateTime.toISOString();
 
       // Create leaderboard
       const result = await api.createLeaderboard({
@@ -123,8 +176,8 @@ export default function CreateLeaderboardPage() {
         type: asIndividuals ? 'individuals' : 'classes',
         subjectIds: selectedSubjects,
         gradeIds: selectedGrades,
-        startTime,
-        endTime
+        startTime: startTimeIso,
+        endTime: endTimeIso
       });
 
       if (result.ok) {
@@ -198,7 +251,7 @@ export default function CreateLeaderboardPage() {
                 <Dropdown
                   open={gradesOpen}
                   onToggle={() => setGradesOpen((v) => !v)}
-                  label={selectedGrades.length === 0 ? "Select Grades" : `${selectedGrades.length} grade(s) selected`}
+                  label={selectedGrades.length === 0 ? (gradesLoading ? "Loading grades..." : "Select Grades") : `${selectedGrades.length} grade(s) selected`}
                 >
                   {gradeOptions.map((grade) => (
                     <CheckboxRow
@@ -214,7 +267,7 @@ export default function CreateLeaderboardPage() {
                 <Dropdown
                   open={subjectsOpen}
                   onToggle={() => setSubjectsOpen((v) => !v)}
-                  label={selectedSubjects.length === 0 ? "Select Subjects" : `${selectedSubjects.length} subject(s) selected`}
+                  label={selectedSubjects.length === 0 ? (subjectsLoading ? "Loading subjects..." : "Select Subjects") : `${selectedSubjects.length} subject(s) selected`}
                 >
                   {subjectOptions.map((subject) => (
                     <CheckboxRow
@@ -228,21 +281,23 @@ export default function CreateLeaderboardPage() {
               </Section>
             </div>
 
-          <Section title="Select a Start & And Date">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <DateInput value={startDate} onChange={setStartDate} />
-              <SelectInput
-                value={startTimeOpt}
-                onChange={setStartTimeOpt}
-                options={["Now", "08:00", "12:00", "15:00", "19:00"]}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:col-span-1">
-                <DateInput value={endDate} onChange={setEndDate} />
-                <SelectInput
-                  value={endTime}
-                  onChange={setEndTime}
-                  options={["08:00", "12:00", "15:00", "19:00", "21:00"]}
-                />
+          <Section title="Select Start & End Date">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Start */}
+              <div>
+                <div className="text-[#103358] font-semibold mb-2">Start</div>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4">
+                  <DateInput value={startDate} onChange={setStartDate} className="min-w-[240px]" />
+                  <TimeInput value={startTimeStr} onChange={setStartTimeStr} />
+                </div>
+              </div>
+              {/* End */}
+              <div>
+                <div className="text-[#103358] font-semibold mb-2">End</div>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr] lg:grid-cols-[1fr_1fr] gap-4">
+                  <DateInput value={endDate} onChange={setEndDate} className="min-w-[240px]" />
+                  <TimeInput value={endTimeStr} onChange={setEndTimeStr} />
+                </div>
               </div>
             </div>
           </Section>
@@ -329,15 +384,17 @@ function InputLike({ value, icon, dropdown }) {
 }
 
 // Real date and select inputs styled like the mocks
-function DateInput({ value, onChange }) {
+function DateInput({ value, onChange, className = "" }) {
   return (
-    <div className="relative flex items-center gap-3 bg-white border border-[#9EC7EA] rounded-xl px-4 py-3 shadow-sm w-full overflow-hidden">
+    <div className={`relative flex items-center gap-3 bg-white border border-[#9EC7EA] rounded-xl px-4 py-3 shadow-sm w-full overflow-hidden ${className}`}>
       <svg className="w-5 h-5 text-[#398AC8] pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       <input
         type="date"
-        value={value}
+        value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 bg-transparent outline-none text-[#103358]"
+        onInput={(e) => onChange(e.currentTarget.value)}
+        className="flex-1 bg-transparent outline-none text-[#103358] cursor-pointer pointer-events-auto"
+        autoComplete="off"
       />
     </div>
   );
@@ -353,7 +410,7 @@ function SelectInput({ value, onChange, options }) {
       >
         {options.map((opt) => (
           <option key={opt} value={opt}>
-            {opt === "Now" ? "Now" : formatTimeLabel(opt)}
+            {opt}
           </option>
         ))}
       </select>
@@ -363,12 +420,7 @@ function SelectInput({ value, onChange, options }) {
 }
 
 function formatTimeLabel(val) {
-  // val can be HH:mm
-  if (!/^[0-9]{2}:[0-9]{2}$/.test(val)) return val;
-  const [h, m] = val.split(":").map((n) => parseInt(n, 10));
-  const period = h >= 12 ? "PM" : "AM";
-  const hr12 = ((h + 11) % 12) + 1;
-  return `${hr12}:${m.toString().padStart(2, "0")} ${period}`;
+  return val;
 }
 
 function ChevronDown({ className = "" }) {
@@ -376,6 +428,14 @@ function ChevronDown({ className = "" }) {
     <svg className={`w-4 h-4 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="m6 9 6 6 6-6" />
     </svg>
+  );
+}
+
+function TimeInput({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-3 bg-white border border-[#9EC7EA] rounded-xl px-4 py-3 shadow-sm w-full">
+      <input type="time" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent outline-none text-[#103358]" />
+    </div>
   );
 }
 

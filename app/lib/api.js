@@ -471,7 +471,8 @@ const fetcher = (data) => {
 
 // Real API functions
 const API_BASE_URL = 'https://dev.takespace.com/api/v1';
-const FIXED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU3OTk4MjE2LCJpYXQiOjE3NTc5MTE4MTYsImp0aSI6IjExYTkyZTMzMDViYjQ1ZTBhNDQ0ZDhjZGI5NWQyMDM5IiwidXNlcl9pZCI6MX0.vkvkwBRKQ8yInPSylYU-ovVfuSzYi9gXyiLn0QVQofY';
+const ADMIN_V1_BASE = `${API_BASE_URL.replace('/api/v1', '')}/admin/v1`;
+const FIXED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4MTAxODM5LCJpYXQiOjE3NTgwMTU0MzksImp0aSI6Ijg2MmZlMzkxYmExZDQ1NjZiYzA1YWZiZTZmOWRjNjIzIiwidXNlcl9pZCI6MX0.turLXu4I1UYMV5tQ4UZJ1HlaY2FUYAt9TqyhdyitBiE';
 
 const apiRequest = async (url, options = {}) => {
   const response = await fetch(url, {
@@ -1459,11 +1460,25 @@ export const api = {
 
   // --- Leaderboard API Functions ---
   
+  // List Leaderboards
+  async listLeaderboards() {
+    try {
+      const url = `${ADMIN_V1_BASE}/leaderboards/`;
+      const data = await apiRequest(url);
+      // Normalize to standard envelope
+      if (data && data.statusCode !== undefined && data.data !== undefined) return data;
+      return { statusCode: 200, data, error: null };
+    } catch (error) {
+      console.error('Error listing leaderboards:', error);
+      throw error;
+    }
+  },
+
   // Create Leaderboard
   async createLeaderboard({ name, type, subjectIds, gradeIds, startTime, endTime }) {
     try {
-      const url = `${API_BASE_URL}/admin/leaderboards/`;
-      const body = {
+      const url = `${ADMIN_V1_BASE}/leaderboards/`;
+      const requestBody = {
         name,
         type,
         subject_ids: subjectIds,
@@ -1473,7 +1488,7 @@ export const api = {
       };
 
       // Debug: Log the actual API payload
-      console.log('API Payload being sent:', JSON.stringify(body, null, 2));
+      console.log('API Payload being sent:', JSON.stringify(requestBody, null, 2));
       
       const response = await fetch(url, {
         method: 'POST',
@@ -1483,13 +1498,17 @@ export const api = {
           'Content-Type': 'application/json',
           'X-CSRFTOKEN': 'TB8QUbGYWtbYimRQnA9cgfvnuIUpqRj9UWpN25DrXkPUresdEwZnzVwTcJTvepDy',
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(requestBody),
       });
       
       const contentType = response.headers.get('content-type') || '';
       const payload = contentType.includes('application/json') ? await response.json() : null;
+      // Normalize to standard envelope expected by UI
+      const normalizedBody = (payload && payload.statusCode !== undefined && payload.data !== undefined)
+        ? payload
+        : (payload ? { statusCode: response.status, data: payload, error: null } : null);
       
-      return { ok: response.ok, status: response.status, body: payload };
+      return { ok: response.ok, status: response.status, body: normalizedBody };
     } catch (error) {
       console.error('Error creating leaderboard:', error);
       return { ok: false, status: 0, body: { error: { message: String(error?.message || 'Network error') } } };
@@ -1499,11 +1518,39 @@ export const api = {
   // Get Leaderboard by ID
   async getLeaderboard(leaderboardId) {
     try {
-      const url = `${API_BASE_URL}/admin/leaderboards/${leaderboardId}/`;
+      const url = `${ADMIN_V1_BASE}/leaderboards/${leaderboardId}/`;
       const data = await apiRequest(url);
-      return data;
+      // Normalize to standard envelope
+      if (data && data.statusCode !== undefined && data.data !== undefined) return data;
+      return { statusCode: 200, data, error: null };
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
+      throw error;
+    }
+  },
+
+  // Get Leaderboard Results
+  async getLeaderboardResults(leaderboardId) {
+    try {
+      const url = `${ADMIN_V1_BASE}/leaderboards/${leaderboardId}/results/`;
+      const data = await apiRequest(url);
+      if (data && data.statusCode !== undefined && data.data !== undefined) return data;
+      return { statusCode: 200, data, error: null };
+    } catch (error) {
+      console.error('Error fetching leaderboard results:', error);
+      throw error;
+    }
+  },
+
+  // Get Top Users (Top 3)
+  async getLeaderboardTopUsers(leaderboardId) {
+    try {
+      const url = `${ADMIN_V1_BASE}/leaderboards/${leaderboardId}/top-users/`;
+      const data = await apiRequest(url);
+      if (data && data.statusCode !== undefined && data.data !== undefined) return data;
+      return { statusCode: 200, data, error: null };
+    } catch (error) {
+      console.error('Error fetching leaderboard top users:', error);
       throw error;
     }
   },
@@ -1511,7 +1558,7 @@ export const api = {
   // End Leaderboard Early
   async endLeaderboard(leaderboardId) {
     try {
-      const url = `${API_BASE_URL}/admin/leaderboards/${leaderboardId}/end/`;
+      const url = `${ADMIN_V1_BASE}/leaderboards/${leaderboardId}/end/`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {

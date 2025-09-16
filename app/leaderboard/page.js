@@ -35,10 +35,19 @@ function useCountdown(targetDate) {
 }
 
 // Helper function to format leaderboard data for display
-const formatLeaderboardData = (leaderboardData) => {
+const formatLeaderboardData = (leaderboardData, { level = 'All', grade = 'All' } = {}) => {
   if (!leaderboardData?.data?.students) return { podiumUsers: [], leaderboardRows: [] };
   
-  const students = leaderboardData.data.students;
+  let students = leaderboardData.data.students;
+
+  // Apply filters
+  students = students.filter((student) => {
+    const studentLevel = student.participants?.level || '';
+    const studentGrade = String(student.participants?.grade ?? '');
+    const levelOk = level === 'All' || studentLevel === level;
+    const gradeOk = grade === 'All' || String(grade) === studentGrade;
+    return levelOk && gradeOk;
+  });
   
   // Sort students by score (descending) and take top 3 for podium
   const sortedStudents = [...students].sort((a, b) => parseInt(b.score) - parseInt(a.score));
@@ -73,6 +82,8 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [ending, setEnding] = useState(false);
+  const [filterLevel, setFilterLevel] = useState('All');
+  const [filterGrade, setFilterGrade] = useState('All');
 
   // Get leaderboard ID from URL params or use default
   const leaderboardId = searchParams.get('id') || '11'; // Default to 11 for testing
@@ -109,7 +120,18 @@ export default function LeaderboardPage() {
 
   // Format data for display
   const { podiumUsers, leaderboardRows } = useMemo(() => {
-    return formatLeaderboardData(leaderboardData);
+    return formatLeaderboardData(leaderboardData, { level: filterLevel, grade: filterGrade });
+  }, [leaderboardData, filterLevel, filterGrade]);
+
+  const availableGrades = useMemo(() => {
+    if (!leaderboardData?.data?.students) return [];
+    const set = new Set();
+    leaderboardData.data.students.forEach((s) => {
+      if (s?.participants?.grade !== undefined && s?.participants?.grade !== null) {
+        set.add(String(s.participants.grade));
+      }
+    });
+    return Array.from(set).sort((a, b) => parseInt(a) - parseInt(b));
   }, [leaderboardData]);
 
   // Handle ending leaderboard
@@ -239,28 +261,25 @@ export default function LeaderboardPage() {
                 {/* Segmented toggle */}
                 <div className="inline-flex rounded-2xl overflow-hidden border border-[#398AC8] shadow-[0_0_40px_rgba(0,0,0,0.08)]">
                   <button
-                    onClick={() => setViewMode('individual')}
-                    className={`h-12 sm:h-[52px] px-5 ${viewMode === 'individual' ? 'bg-[#103358]' : 'bg-white'} flex items-center justify-center`}
+                    onClick={() => { setViewMode('individual'); setFilterLevel('Primary'); }}
+                    className={`h-12 sm:h-[52px] px-5 ${viewMode === 'individual' ? 'bg-[#103358]' : 'bg-white'} flex items-center justify-center rounded-l-2xl`}
                     aria-pressed={viewMode === 'individual'}
                   >
                     <img
                       src="/leaderboard/singleuser.svg"
-                      alt="Individual"
+                      alt="Primary"
                       className={`w-[18px] h-[18px] ${viewMode === 'individual' ? 'invert-[1] brightness-0 saturate-0' : ''}`}
                     />
                   </button>
                   <button
-                    onClick={() => setViewMode('group')}
-                    className={`h-12 sm:h-[52px] px-5 ${viewMode === 'group' ? 'bg-[#103358]' : 'bg-white'} flex items-center justify-center`}
+                    onClick={() => { setViewMode('group'); setFilterLevel('Higher'); }}
+                    className={`h-12 sm:h-[52px] px-5 ${viewMode === 'group' ? 'bg-[#103358]' : 'bg-white'} flex items-center justify-center rounded-r-2xl`}
                     aria-pressed={viewMode === 'group'}
-                    style={{
-                      borderRadius: '12px',
-                    }}
                   >
                     <img
                       src="/leaderboard/groupuser.svg"
-                      alt="Group"
-                      className="w-[18px] h-[18px]"
+                      alt="Higher"
+                      className={`w-[18px] h-[18px] ${viewMode === 'group' ? 'invert-[1] brightness-0 saturate-0' : ''}`}
                     />
                   </button>
                 </div>
@@ -299,18 +318,43 @@ export default function LeaderboardPage() {
                 <div className="absolute left-0 top-full mt-2 z-20 w-80 sm:w-96 rounded-2xl bg-white shadow-xl border border-gray-200 p-4">
                   <div className="text-[#103358] font-semibold mb-3 flex items-center justify-between">
                     <span>Participants</span>
-                    <svg className="w-5 h-5 text-[#103358]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                    <button onClick={() => setShowFilterMenu(false)} aria-label="Close" className="text-[#103358]">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                   </div>
-                  <div className="space-y-3 text-[#103358]">
-                    <div>Primary 1, Primary 2</div>
-                    <div>Primary 3, Primary 4,</div>
-                    <div>Primary 5, Primary 6,</div>
-                    <div>Secondary 1,  Secondary 1,</div>
-                    <div>Secondary 4  Higher 1,</div>
-                    <div>and Higher 2</div>
+                  <div className="space-y-4 text-[#103358]">
+                    <div>
+                      <div className="text-sm font-semibold mb-2">Level</div>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2"><input type="radio" name="level" checked={filterLevel==='All'} onChange={() => setFilterLevel('All')} />All</label>
+                        <label className="flex items-center gap-2"><input type="radio" name="level" checked={filterLevel==='Primary'} onChange={() => setFilterLevel('Primary')} />Primary</label>
+                        <label className="flex items-center gap-2"><input type="radio" name="level" checked={filterLevel==='Higher'} onChange={() => setFilterLevel('Higher')} />Higher</label>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold mb-2">Grade</div>
+                      <select
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                        value={filterGrade}
+                        onChange={(e) => setFilterGrade(e.target.value)}
+                      >
+                        <option value="All">All</option>
+                        {availableGrades.map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div className="mt-4 text-[#398AC8] font-semibold">Subjects:</div>
-                  <div className="text-[#103358] mt-1">All Subjects</div>
+                  <div className="mt-4 flex items-center justify-end gap-3">
+                    <button
+                      className="text-[#398AC8] font-semibold"
+                      onClick={() => { setFilterLevel('All'); setFilterGrade('All'); }}
+                    >Reset</button>
+                    <button
+                      className="bg-[#103358] text-white px-4 py-2 rounded-lg"
+                      onClick={() => setShowFilterMenu(false)}
+                    >Apply</button>
+                  </div>
                 </div>
               )}
             </div>
